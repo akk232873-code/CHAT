@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA // Premium AI Workspace</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
+        }
+        .heading-font {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.2);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.4);
+        }
+        /* Glassmorphism primitives */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .light .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .light .glass-card {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        /* Gradient glows */
+        .glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.15;
+            pointer-events: none;
+            z-index: 0;
+            transition: all 0.5s ease;
+        }
+        /* Markdown rendering rules */
+        .prose-ai p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .prose-ai p:last-child { margin-bottom: 0; }
+        .prose-ai ul, .prose-ai ol { margin-left: 1.5rem; margin-bottom: 0.75rem; list-style-type: disc; }
+        .prose-ai ol { list-style-type: decimal; }
+        .prose-ai code { font-family: monospace; background: rgba(0,0,0,0.2); padding: 0.125rem 0.25rem; border-radius: 0.25rem; font-size: 0.9em; }
+        .light .prose-ai code { background: rgba(0,0,0,0.06); }
+        /* Dynamic Theme Variables */
+        :root {
+            --accent-color: 99, 102, 241; /* Indigo default */
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+        }
+        .bg-accent { background-color: rgb(var(--accent-color)); }
+        .text-accent { color: rgb(var(--accent-color)); }
+        .border-accent { border-color: rgb(var(--accent-color)); }
+        .bg-gradient-accent { background: var(--accent-gradient); }
+        
+        /* Typing animation dot sequence */
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(0.6); opacity: 0.4; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .typing-dot {
+            animation: pulseDot 1.4s infinite ease-in-out;
+        }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen w-screen flex transition-colors duration-300 antialiased light:bg-slate-50 light:text-slate-900">
+
+    <!-- Ambient Background Glow Orbs -->
+    <div id="orb-1" class="glow-orb w-96 h-96 bg-indigo-500 top-12 left-1/4"></div>
+    <div id="orb-2" class="glow-orb w-[30rem] h-[30rem] bg-purple-500 bottom-10 right-1/4"></div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 max-w-sm pointer-events-none"></div>
+
+    <!-- SIDEBAR DRAWER OVERLAY (MOBILE) -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden" onclick="toggleMobileSidebar()"></div>
+
+    <!-- LEFT SIDEBAR -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-80 glass-panel z-40 transform -translate-x-full transition-transform duration-300 flex flex-col lg:relative lg:translate-x-0 border-r border-white/5">
+        <!-- Sidebar Brand Header -->
+        <div class="p-5 flex items-center justify-between border-b border-white/5 light:border-black/5">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-accent flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-base"></i>
+                </div>
+                <div>
+                    <h1 class="heading-font font-bold text-lg tracking-wide bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent light:from-slate-900 light:to-slate-600">AURA</h1>
+                    <p class="text-[10px] text-slate-500 tracking-widest font-semibold uppercase -mt-0.5">Workspace OS</p>
+                </div>
+            </div>
+            <button onclick="toggleMobileSidebar()" class="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:bg-white/5">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="p-4 space-y-2">
+            <button onclick="createNewChat()" class="w-full bg-gradient-accent hover:opacity-95 text-white font-medium text-sm py-2.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98]">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>New Session</span>
+            </button>
+            <div class="relative mt-2">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-xs text-slate-400"></i>
+                <input id="search-input" type="text" placeholder="Search sessions..." oninput="filterChats()" class="w-full bg-slate-900/50 light:bg-slate-200/50 border border-white/5 light:border-black/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:outline-none focus:border-indigo-500 transition-colors">
+            </div>
+        </div>
+
+        <!-- Navigation Tabs Selector -->
+        <div class="px-4 mb-2 flex gap-1 border-b border-white/5 pb-2 light:border-black/5">
+            <button id="tab-btn-chat" onclick="switchSidebarTab('chat')" class="flex-1 py-1.5 rounded-lg text-xs font-medium text-center bg-white/10 light:bg-slate-900/10 text-white light:text-slate-900 transition-all">
+                <i class="fa-solid fa-message mr-1.5"></i>Chats
+            </button>
+            <button id="tab-btn-image" onclick="switchSidebarTab('image')" class="flex-1 py-1.5 rounded-lg text-xs font-medium text-center text-slate-400 hover:text-white transition-all">
+                <i class="fa-solid fa-image mr-1.5"></i>Gallery
+            </button>
+        </div>
+
+        <!-- Scrollable Navigation Area -->
+        <div class="flex-1 overflow-y-auto px-2 space-y-1" id="sidebar-vault">
+            <!-- Dynamic list population area -->
+            <div id="chat-history-list" class="space-y-1"></div>
+            <div id="image-history-list" class="hidden grid grid-cols-2 gap-2 p-2"></div>
+        </div>
+
+        <!-- Footer Fixed Utility Panel -->
+        <div class="p-4 border-t border-white/5 light:border-black/5 bg-slate-950/20 space-y-1.5">
+            <button onclick="showSection('warning')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-amber-400 hover:bg-amber-500/10 flex items-center gap-2.5 transition-colors">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>AI Safety Warning</span>
+            </button>
+            <button onclick="showSection('settings')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 flex items-center justify-between transition-colors light:hover:bg-slate-900/5 light:hover:text-slate-900">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Control Panel</span>
+                </div>
+                <i class="fa-solid fa-chevron-right text-[10px] opacity-50"></i>
+            </button>
+            <button onclick="showSection('about')" class="w-full text-left px-3 py-2 rounded-xl text-xs font-medium text-slate-400 hover:text-white hover:bg-white/5 flex items-center gap-2.5 transition-colors light:hover:bg-slate-900/5 light:hover:text-slate-900">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>About Architecture</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN APP CANVAS CONTAINER -->
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative z-10">
+        
+        <!-- TOP APP BAR HEADER -->
+        <header class="h-16 border-b border-white/5 light:border-black/5 glass-panel px-4 flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-white/5 active:scale-95 transition-all">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="flex flex-col">
+                    <div class="flex items-center gap-2">
+                        <span id="current-view-title" class="heading-font font-semibold text-sm tracking-wide">Core Engine</span>
+                        <div class="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-medium">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            <span id="network-status">Connected</span>
+                        </div>
+                    </div>
+                    <span id="header-subtitle" class="text-[11px] text-slate-400 font-normal">Active System Session</span>
+                </div>
+            </div>
+
+            <!-- Context Processing Intelligence Engine Profiles -->
+            <div id="model-selector-zone" class="hidden md:flex items-center bg-slate-950/60 light:bg-slate-200/60 p-1 border border-white/5 light:border-black/5 rounded-xl gap-1">
+                <button onclick="switchActiveModel('gemini-1.5-flash')" data-model="gemini-1.5-flash" class="model-pill px-3 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-accent text-white shadow-sm">
+                    <i class="fa-solid fa-bolt-lightning text-[10px]"></i>
+                    <span>Fast Engine</span>
+                </button>
+                <button onclick="switchActiveModel('gemini-1.5-pro')" data-model="gemini-1.5-pro" class="model-pill px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-brain text-[10px]"></i>
+                    <span>Pro Analytics</span>
+                </button>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <button onclick="switchModeView()" id="mode-toggle-btn" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-white/5 hover:text-white transition-all" title="Toggle Mode Workspace">
+                    <i class="fa-solid fa-wand-magic text-sm"></i>
+                </button>
+                <button onclick="showSection('settings')" class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-300 hover:bg-white/5 hover:text-white transition-all">
+                    <i class="fa-solid fa-sliders text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- VIEWPORT SWITCH PLATFORM MAP -->
+        <div class="flex-1 relative overflow-hidden">
+            
+            <!-- SECTION 1: CHAT WORKSPACE UI -->
+            <section id="view-chat" class="absolute inset-0 flex flex-col hidden">
+                <!-- Message Thread Stream -->
+                <div id="chat-thread-box" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth">
+                    <!-- Dynamic message injections here -->
+                </div>
+
+                <!-- Input Interface Deck -->
+                <div class="p-4 border-t border-white/5 light:border-black/5 glass-panel bg-slate-950/20">
+                    <div class="max-w-4xl mx-auto relative">
+                        
+                        <!-- Upload attachment chip preview track -->
+                        <div id="attachment-preview-deck" class="hidden pb-2.5 flex flex-wrap gap-2"></div>
+
+                        <!-- Main Core Entry Bar Layout -->
+                        <div class="bg-slate-900/90 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl p-2.5 focus-within:border-indigo-500 transition-all shadow-xl">
+                            <textarea id="prompt-textarea" rows="1" placeholder="Type prompt, use Shift + Enter for newline..." oninput="adjustTextareaHeight(this)" onkeydown="handleTextAreaKeydown(event)" class="w-full bg-transparent resize-none border-0 text-slate-100 light:text-slate-900 placeholder-slate-400 focus:ring-0 text-sm max-h-44 px-2 pt-1.5 focus:outline-none"></textarea>
+                            
+                            <div class="flex items-center justify-between pt-2 border-t border-white/5 mt-1.5 light:border-black/5">
+                                <div class="flex items-center gap-1">
+                                    <button onclick="triggerAttachmentPicker()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all" title="Attach Document Data">
+                                        <i class="fa-solid fa-paperclip text-sm"></i>
+                                    </button>
+                                    <button id="voice-dictation-btn" onclick="toggleVoiceDictation()" class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all" title="Voice Stream Capture">
+                                        <i class="fa-solid fa-microphone text-sm"></i>
+                                    </button>
+                                </div>
+
+                                <div class="flex items-center gap-2">
+                                    <button id="stop-generation-btn" onclick="abortAISession()" class="hidden bg-rose-500/20 border border-rose-500/30 hover:bg-rose-500/30 text-rose-400 px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5">
+                                        <i class="fa-solid fa-stop text-[10px]"></i>
+                                        <span>Halt Processing</span>
+                                    </button>
+                                    <button onclick="dispatchUserMessage()" class="bg-gradient-accent hover:opacity-95 text-white w-9 h-9 rounded-xl flex items-center justify-center shadow-md active:scale-95 transition-all">
+                                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="universal-file-picker" class="hidden" multiple onchange="processSelectedAttachments(event)">
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: PREMIUM ARTISTIC STUDIO (IMAGE GENERATOR) -->
+            <section id="view-image-studio" class="absolute inset-0 flex flex-col overflow-y-auto hidden">
+                <div class="max-w-4xl mx-auto w-full p-4 md:p-6 space-y-6">
+                    <div class="glass-card rounded-2xl p-5 border border-white/5 space-y-5">
+                        <div>
+                            <h3 class="heading-font font-bold text-base tracking-wide">Dynamic Image Synthesis Suite</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">Generate customized artistic visual compositions from prompt matrices.</p>
+                        </div>
+
+                        <!-- Prompt input matrix -->
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-semibold text-slate-300">Composition Prompt Specification</label>
+                            <textarea id="image-prompt-input" rows="3" placeholder="Describe the scene layout, aesthetic archetype, artistic lighting filters, color metrics..." class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:border-indigo-500 transition-colors placeholder-slate-500 text-slate-100 light:bg-slate-100 light:text-slate-900 light:border-black/10"></textarea>
+                        </div>
+
+                        <!-- Matrix Settings Configurations Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs font-semibold text-slate-300 block">Aspect Ratio Metrics</label>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button onclick="setImageAspectRatio('1:1')" data-ratio="1:1" class="ratio-btn py-2 rounded-xl text-xs font-medium border border-indigo-500 bg-indigo-500/10 text-white transition-all">
+                                        <i class="fa-solid fa-square block text-sm mb-1 opacity-80"></i>Square (1:1)
+                                    </button>
+                                    <button onclick="setImageAspectRatio('16:9')" data-ratio="16:9" class="ratio-btn py-2 rounded-xl text-xs font-medium border border-white/5 bg-slate-900/40 text-slate-400 hover:text-white transition-all">
+                                        <i class="fa-solid fa-rectangle-hd block text-sm mb-1 opacity-80"></i>Cinema (16:9)
+                                    </button>
+                                    <button onclick="setImageAspectRatio('9:16')" data-ratio="9:16" class="ratio-btn py-2 rounded-xl text-xs font-medium border border-white/5 bg-slate-900/40 text-slate-400 hover:text-white transition-all">
+                                        <i class="fa-solid fa-mobile-screen block text-sm mb-1 opacity-80"></i>Portrait (9:16)
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-2">
+                                <label class="text-xs font-semibold text-slate-300 block">Output Dimension Scale</label>
+                                <select id="image-dimension-selector" class="w-full bg-slate-900/60 border border-white/10 rounded-xl p-2.5 text-xs focus:outline-none focus:border-indigo-500 transition-colors text-slate-300 light:bg-slate-100 light:text-slate-900 light:border-black/10">
+                                    <option value="512x512">Standard Definition Definition (512x512)</option>
+                                    <option value="1024x1024" selected>High Definition Matrix (1024x1024)</option>
+                                    <option value="1440x900">Wide Architectural Presentation (1440x900)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <button onclick="executeVisualSynthesis()" class="w-full bg-gradient-accent hover:opacity-95 text-white font-semibold py-3 rounded-xl text-sm shadow-xl flex items-center justify-center gap-2 active:scale-[0.99] transition-transform">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                            <span>Initialize Image Generation Sequence</span>
+                        </button>
+                    </div>
+
+                    <!-- Generation Sandbox Monitor Output Screen -->
+                    <div id="image-sandbox-monitor" class="hidden glass-card rounded-2xl p-4 border border-white/5 flex flex-col items-center justify-center min-h-[300px] relative overflow-hidden">
+                        <!-- Loading block state -->
+                        <div id="image-processing-loader" class="flex flex-col items-center gap-3 py-12 z-10">
+                            <div class="w-12 h-12 rounded-full border-4 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+                            <p class="text-xs font-medium text-slate-400 tracking-wider">Compiling visual geometry matrices...</p>
+                        </div>
+                        <!-- Completed block state -->
+                        <div id="image-processing-result" class="hidden w-full space-y-4 z-10">
+                            <div class="relative rounded-xl overflow-hidden group border border-white/10 shadow-2xl max-w-lg mx-auto bg-slate-950">
+                                <img id="compiled-sandbox-img" src="" alt="Synthesis Result" class="w-full h-auto object-contain mx-auto">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-between p-4">
+                                    <p id="compiled-img-tag" class="text-xs text-white/90 truncate max-w-[70%] font-medium"></p>
+                                    <div class="flex gap-2">
+                                        <button id="compiled-dl-btn" class="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 transition-colors"><i class="fa-solid fa-download text-xs"></i></button>
+                                        <button id="compiled-share-btn" class="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 transition-colors"><i class="fa-solid fa-share-nodes text-xs"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 3: MANAGEMENT CONTROL PANEL (SETTINGS) -->
+            <section id="view-settings" class="absolute inset-0 overflow-y-auto hidden">
+                <div class="max-w-3xl mx-auto p-4 md:p-6 space-y-6">
+                    <div class="flex items-center gap-3 border-b border-white/5 pb-4 light:border-black/5">
+                        <i class="fa-solid fa-sliders text-xl text-accent"></i>
+                        <div>
+                            <h2 class="heading-font font-bold text-lg tracking-wide">Workspace System Preferences</h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Configure algorithmic execution limits and stylistic architecture parameters.</p>
+                        </div>
+                    </div>
+
+                    <!-- Configuration Block Segments -->
+                    <div class="space-y-4">
+                        <!-- Card 1: API Token Configuration -->
+                        <div class="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
+                            <div class="flex items-center gap-2 text-sm font-semibold tracking-wide">
+                                <i class="fa-solid fa-key text-indigo-400"></i>
+                                <span>Credential Infrastructure Routing</span>
+                            </div>
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-medium text-slate-400">Gemini Cloud API Access Token</label>
+                                <div class="flex gap-2">
+                                    <div class="relative flex-1">
+                                        <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-slate-900 border border-white/10 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-indigo-500 text-slate-100 transition-colors font-mono tracking-widest light:bg-slate-100 light:text-slate-900 light:border-black/10">
+                                        <button onclick="toggleVisibility('input-api-key')" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors text-xs"><i class="fa-solid fa-eye"></i></button>
+                                    </div>
+                                    <button onclick="commitAPIKey()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-xs px-4 rounded-xl shadow-md transition-colors active:scale-98">Commit Key</button>
+                                </div>
+                                <p class="text-[11px] text-slate-500 leading-relaxed">Tokens remain encrypted locally in safety sandbox stores. Connections route securely to Google endpoints.</p>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Aesthetic Personalization Grid -->
+                        <div class="glass-card rounded-2xl p-5 border border-white/5 grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div class="space-y-3">
+                                <label class="text-xs font-semibold text-slate-300 block">Workspace Luminance Mode</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="setThemeLuminance('dark')" id="theme-btn-dark" class="py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all"><i class="fa-solid fa-moon"></i>Dark Void</button>
+                                    <button onclick="setThemeLuminance('light')" id="theme-btn-light" class="py-2 px-3 rounded-xl border text-xs font-medium flex items-center justify-center gap-2 transition-all"><i class="fa-solid fa-sun"></i>Light Canvas</button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="text-xs font-semibold text-slate-300 block">Primary UI Accent Identity</label>
+                                <div class="flex flex-wrap gap-2.5 pt-1">
+                                    <button onclick="setUIPrimaryAccent('99, 102, 241', 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)')" class="w-7 h-7 rounded-full bg-indigo-500 border-2 border-white/20 active:scale-90 transition-all"></button>
+                                    <button onclick="setUIPrimaryAccent('16, 185, 129', 'linear-gradient(135deg, #10b981 0%, #059669 100%)')" class="w-7 h-7 rounded-full bg-emerald-500 border-2 border-transparent active:scale-90 transition-all"></button>
+                                    <button onclick="setUIPrimaryAccent('239, 68, 68', 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)')" class="w-7 h-7 rounded-full bg-rose-500 border-2 border-transparent active:scale-90 transition-all"></button>
+                                    <button onclick="setUIPrimaryAccent('245, 158, 11', 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)')" class="w-7 h-7 rounded-full bg-amber-500 border-2 border-transparent active:scale-90 transition-all"></button>
+                                    <button onclick="setUIPrimaryAccent('6, 182, 212', 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)')" class="w-7 h-7 rounded-full bg-cyan-500 border-2 border-transparent active:scale-90 transition-all"></button>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-300 block">Typography Scaling Metric</label>
+                                <select id="setting-font-size" onchange="applyConfigurationTransforms()" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 light:bg-slate-100 light:text-slate-900 light:border-black/10">
+                                    <option value="13px">Compact Mode Scale</option>
+                                    <option value="14px" selected>Balanced Standard Matrix</option>
+                                    <option value="16px">Enhanced Accessibility Scale</option>
+                                </select>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="text-xs font-semibold text-slate-300 block">Localization Vector Language</label>
+                                <select id="setting-language" onchange="applyConfigurationTransforms()" class="w-full bg-slate-900 border border-white/10 rounded-xl p-2 text-xs text-slate-300 focus:outline-none focus:border-indigo-500 light:bg-slate-100 light:text-slate-900 light:border-black/10">
+                                    <option value="en" selected>English (International)</option>
+                                    <option value="es">Español (Castellano)</option>
+                                    <option value="fr">Français (Standard)</option>
+                                    <option value="de">Deutsch (System)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Storage Maintenance Protocols -->
+                        <div class="glass-card rounded-2xl p-5 border border-white/5 space-y-4">
+                            <div class="text-sm font-semibold text-rose-400 flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                <span>Storage Infrastructure Maintenance Protocols</span>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="exportWorkspaceContextData()" class="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition-colors">Export Vault Image JSON</button>
+                                <button onclick="triggerImportSelection()" class="bg-white/5 border border-white/10 hover:bg-white/10 text-slate-200 px-4 py-2 rounded-xl text-xs font-medium transition-colors">Import Cloud Vault JSON</button>
+                                <button onclick="clearSystemHistoryStores('chats')" class="bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 px-4 py-2 rounded-xl text-xs font-medium transition-colors">Purge Text Threads</button>
+                                <button onclick="clearSystemHistoryStores('images')" class="bg-rose-500/10 border border-rose-500/20 hover:bg-rose-500/20 text-rose-400 px-4 py-2 rounded-xl text-xs font-medium transition-colors">Wipe Imagery Repository</button>
+                            </div>
+                            <input type="file" id="import-data-picker" class="hidden" accept=".json" onchange="handleWorkspaceContextImport(event)">
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: SAFETY WARNING ADVISORY WINDOW -->
+            <section id="view-warning" class="absolute inset-0 flex items-center justify-center overflow-y-auto hidden">
+                <div class="max-w-md w-full p-6 glass-card rounded-3xl border border-amber-500/20 shadow-2xl text-center space-y-5 m-4 bg-slate-950/80">
+                    <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center text-2xl mx-auto shadow-lg shadow-amber-500/5">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <h3 class="heading-font font-bold text-lg text-slate-100 tracking-wide light:text-slate-900">System Execution Warning Blueprint</h3>
+                        <p class="text-xs text-slate-400 leading-relaxed">Generative neural architecture outputs are volatile. AI synthesis loops are non-deterministic and can generate text anomalies, incorrect context maps, or faulty analytical code representations.</p>
+                    </div>
+                    <blockquote class="bg-amber-500/5 border-l-4 border-amber-500 p-3 rounded-r-xl text-left text-xs text-amber-300 font-medium">
+                        "Artificial intelligence models can display hallucinations. Verify parameters and business logic values explicitly before staging to production environments."
+                    </blockquote>
+                    <button onclick="showSection('chat')" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-semibold text-xs py-2.5 rounded-xl transition-opacity hover:opacity-95 shadow-md">Acknowledge Advisory Vector</button>
+                </div>
+            </section>
+
+            <!-- SECTION 5: ABOUT PLATFORM DOCUMENTATION -->
+            <section id="view-about" class="absolute inset-0 overflow-y-auto hidden">
+                <div class="max-w-2xl mx-auto p-4 md:p-6 space-y-6">
+                    <div class="glass-card rounded-3xl p-6 border border-white/5 space-y-5 relative overflow-hidden bg-slate-950/40">
+                        <div class="absolute -top-12 -right-12 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl"></div>
+                        <div class="space-y-2">
+                            <h2 class="heading-font font-bold text-xl tracking-wide bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent light:from-slate-900 light:to-slate-600">AURA AI Architecture Framework</h2>
+                            <p class="text-xs text-slate-400 font-mono">Platform Vector: Release v4.8.2-LTS [Client Execution Engine]</p>
+                        </div>
+                        <hr class="border-white/5 light:border-black/5">
+                        <p class="text-xs text-slate-300 leading-relaxed light:text-slate-700">AURA represents an ultra-low latency serverless client shell developed to provide a secure operational portal to deep language learning clusters. By processing markdown trees, base64 multi-modal binaries, and state storage paradigms entirely local sandbox level, AURA delivers an incredibly smooth experience.</p>
+                        <div class="grid grid-cols-2 gap-3 text-left">
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5 light:bg-slate-900/5">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Core Core Layer</span>
+                                <span class="text-xs font-semibold text-indigo-400">Pure Vanilla EcmaScript ESM</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5 light:bg-slate-900/5">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Styling Engine</span>
+                                <span class="text-xs font-semibold text-purple-400">Tailwind Engine v4 Matrix</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5 light:bg-slate-900/5">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Security Layer</span>
+                                <span class="text-xs font-semibold text-emerald-400">Sandbox Key Decoupling</span>
+                            </div>
+                            <div class="bg-white/5 p-3 rounded-xl border border-white/5 light:bg-slate-900/5">
+                                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Persistence Map</span>
+                                <span class="text-xs font-semibold text-amber-400">LocalStorage Registry Blocks</span>
+                            </div>
+                        </div>
+                        <button onclick="showSection('chat')" class="w-full bg-white/5 border border-white/10 hover:bg-white/10 py-2.5 rounded-xl text-xs font-semibold text-slate-300 transition-colors">Return to active execution thread</button>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- WORKSPACE CONTROL SYSTEM ARCHITECTURE SCRIPT -->
+    <script>
+        // Global System Memory Matrix Store
+        let systemState = {
+            activeView: 'chat',
+            activeModel: 'gemini-1.5-flash',
+            activeChatId: null,
+            sidebarTab: 'chat',
+            currentAspectRatio: '1:1',
+            activeAbortController: null,
+            stagedAttachments: [],
+            speechRecognitionEngine: null,
+            isDictating: false,
+            vault: {
+                chats: [],
+                images: [],
+                settings: {
+                    luminance: 'dark',
+                    accentColor: '99, 102, 241',
+                    accentGradient: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                    fontSize: '14px',
+                    language: 'en'
+                }
+            }
+        };
+
+        // System Core Initialization Hook
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeSystemInfrastructure();
+            setupHardwareEventListeners();
+        });
+
+        function initializeSystemInfrastructure() {
+            // Load LocalStorage parameters safely
+            loadSettings();
+            loadChats();
+            loadImageHistory();
+
+            // Match active settings configurations on HTML DOM
+            applyConfigurationTransforms();
+
+            // Handle network status monitoring arrays
+            window.addEventListener('online', updateNetworkStatusIndicator);
+            window.addEventListener('offline', updateNetworkStatusIndicator);
+            updateNetworkStatusIndicator();
+
+            // Boot default screen structure states
+            if (systemState.vault.chats.length === 0) {
+                createNewChat();
+            } else {
+                mountActiveChatThread(systemState.vault.chats[0].id);
+            }
+            showSection('chat');
+        }
+
+        function setupHardwareEventListeners() {
+            // Setup voice engine parameters if supported natively
+            const SpeechEngine = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechEngine) {
+                systemState.speechRecognitionEngine = new SpeechEngine();
+                systemState.speechRecognitionEngine.continuous = true;
+                systemState.speechRecognitionEngine.interimResults = false;
+                systemState.speechRecognitionEngine.lang = systemState.vault.settings.language === 'en' ? 'en-US' : systemState.vault.settings.language;
+
+                systemState.speechRecognitionEngine.onresult = (event) => {
+                    const speechChunk = event.results[event.results.length - 1][0].transcript;
+                    const promptArea = document.getElementById('prompt-textarea');
+                    promptArea.value += (promptArea.value ? ' ' : '') + speechChunk;
+                    adjustTextareaHeight(promptArea);
+                };
+
+                systemState.speechRecognitionEngine.onerror = (err) => {
+                    showToast(`Voice ingestion interrupt: ${err.error}`, 'error');
+                    deactivateVoiceUIState();
+                };
+
+                systemState.speechRecognitionEngine.onend = () => {
+                    if (systemState.isDictating) systemState.speechRecognitionEngine.start();
+                };
+            }
+        }
+
+        // VIEW NAVIGATION CONTROLLER MATRIX
+        function showSection(viewId) {
+            systemState.activeView = viewId;
+            
+            // Hide all structural sections first
+            ['view-chat', 'view-image-studio', 'view-settings', 'view-warning', 'view-about'].forEach(id => {
+                document.getElementById(id).classList.add('hidden');
+            });
+
+            // Remap targets gracefully
+            const targetSection = document.getElementById(`view-${viewId}`);
+            if (targetSection) targetSection.classList.remove('hidden');
+
+            // Render navigation layout updates
+            const headerTitle = document.getElementById('current-view-title');
+            const headerSubtitle = document.getElementById('header-subtitle');
+            
+            if (viewId === 'chat') {
+                const currentChat = systemState.vault.chats.find(c => c.id === systemState.activeChatId);
+                headerTitle.textContent = currentChat ? currentChat.title : "Core Processing Engine";
+                headerSubtitle.textContent = `Model Cluster Profile: ${systemState.activeModel.toUpperCase()}`;
+                document.getElementById('model-selector-zone').classList.remove('md:hidden');
+            } else {
+                headerTitle.textContent = viewId.toUpperCase() + " // CONTROL PANEL";
+                headerSubtitle.textContent = "AURA Infrastructure Subsystem View";
+                document.getElementById('model-selector-zone').classList.add('md:hidden');
+            }
+
+            // Sync visual model pills state metrics
+            document.querySelectorAll('.model-pill').forEach(pill => {
+                if (pill.getAttribute('data-model') === systemState.activeModel) {
+                    pill.className = "model-pill px-3 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 bg-accent text-white shadow-sm";
+                } else {
+                    pill.className = "model-pill px-3 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-all flex items-center gap-1.5";
+                }
+            });
+
+            // Close mobile side drawer automatically
+            document.getElementById('sidebar').classList.add('-translate-x-full');
+            document.getElementById('sidebar-overlay').classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function switchModeView() {
+            if (systemState.activeView === 'chat') {
+                showSection('image-studio');
+                document.getElementById('mode-toggle-btn').innerHTML = `<i class="fa-solid fa-message text-sm text-accent"></i>`;
+                document.getElementById('mode-toggle-btn').title = "Switch to Text Engine Terminal";
+            } else {
+                showSection('chat');
+                document.getElementById('mode-toggle-btn').innerHTML = `<i class="fa-solid fa-wand-magic text-sm"></i>`;
+                document.getElementById('mode-toggle-btn').title = "Switch to Artistic Studio Suite";
+            }
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function switchSidebarTab(tab) {
+            systemState.sidebarTab = tab;
+            const chatBtn = document.getElementById('tab-btn-chat');
+            const imgBtn = document.getElementById('tab-btn-image');
+            const chatList = document.getElementById('chat-history-list');
+            const imgList = document.getElementById('image-history-list');
+
+            if (tab === 'chat') {
+                chatBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-medium text-center bg-white/10 light:bg-slate-900/10 text-white light:text-slate-900 transition-all";
+                imgBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-medium text-center text-slate-400 hover:text-white transition-all";
+                chatList.classList.remove('hidden');
+                imgList.classList.add('hidden');
+            } else {
+                imgBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-medium text-center bg-white/10 light:bg-slate-900/10 text-white light:text-slate-900 transition-all";
+                chatBtn.className = "flex-1 py-1.5 rounded-lg text-xs font-medium text-center text-slate-400 hover:text-white transition-all";
+                chatList.classList.add('hidden');
+                imgList.classList.remove('hidden');
+                renderImageHistoryVault();
+            }
+        }
+
+        // TEXT CONVERSATION BUSINESS LOGIC PARADIGM
+        function createNewChat() {
+            const chatObj = {
+                id: 'chat_' + Date.now(),
+                title: `Session Track Delta ${systemState.vault.chats.length + 1}`,
+                model: systemState.activeModel,
+                messages: [
+                    {
+                        role: 'model',
+                        text: "AURA Terminal environment online. Awaiting data processing vectors.",
+                        timestamp: Date.now(),
+                        attachments: []
+                    }
+                ]
+            };
+            systemState.vault.chats.unshift(chatObj);
+            saveChats();
+            renderChatHistoryVault();
+            mountActiveChatThread(chatObj.id);
+            showSection('chat');
+        }
+
+        function mountActiveChatThread(chatId) {
+            systemState.activeChatId = chatId;
+            const currentChat = systemState.vault.chats.find(c => c.id === chatId);
+            if (!currentChat) return;
+
+            systemState.activeModel = currentChat.model || 'gemini-1.5-flash';
+            
+            // Re-render matching conversation trace logs
+            const streamBox = document.getElementById('chat-thread-box');
+            streamBox.innerHTML = '';
+            
+            currentChat.messages.forEach((msg, idx) => {
+                appendMessageToDOM(msg.role, msg.text, msg.attachments, idx);
+            });
+
+            renderChatHistoryVault();
+            if (systemState.activeView === 'chat') {
+                showSection('chat');
+            }
+            scrollToBottomSmoothly();
+        }
+
+        function appendMessageToDOM(role, text, attachments = [], index = 0) {
+            const streamBox = document.getElementById('chat-thread-box');
+            const wrapper = document.createElement('div');
+            
+            const isUser = role === 'user';
+            wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} w-full transform transition-all duration-300`;
+
+            // Build structural multi-modal card if attachments are present
+            let binaryAttachmentMarkup = '';
+            if (attachments && attachments.length > 0) {
+                binaryAttachmentMarkup = `<div class="flex flex-wrap gap-2 mb-2">`;
+                attachments.forEach(file => {
+                    if (file.type.startsWith('image/')) {
+                        binaryAttachmentMarkup += `<img src="${file.data}" class="max-w-[200px] max-h-[150px] rounded-lg border border-white/10 shadow-md">`;
+                    } else {
+                        binaryAttachmentMarkup += `<div class="bg-white/5 border border-white/10 px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1.5"><i class="fa-solid fa-file-code text-indigo-400"></i><span class="max-w-[120px] truncate">${file.name}</span></div>`;
+                    }
+                });
+                binaryAttachmentMarkup += `</div>`;
+            }
+
+            // Client side custom core dynamic markdown token parser string engine
+            const calculatedTextHTML = isUser ? escapeTextHTML(text) : parseSystemMarkdown(text);
+
+            wrapper.innerHTML = `
+                <div class="max-w-[85%] md:max-w-[70%] rounded-2xl p-4 transition-all relative group shadow-lg ${
+                    isUser 
+                    ? 'bg-gradient-accent text-white rounded-br-none' 
+                    : 'glass-card border border-white/5 text-slate-100 rounded-bl-none light:text-slate-900'
+                }">
+                    ${binaryAttachmentMarkup}
+                    <div class="text-sm prose-ai break-words tracking-wide leading-relaxed font-normal">${calculatedTextHTML}</div>
+                    
+                    <div class="absolute -bottom-6 ${isUser ? 'right-1' : 'left-1'} opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-2 pt-1 text-[10px] text-slate-400 font-mono z-20">
+                        <button onclick="copyPayloadBuffer('${btoa(unescape(encodeURIComponent(text)))}')" class="hover:text-white transition-colors" title="Copy Content Buffer"><i class="fa-solid fa-copy mr-0.5"></i>Copy</button>
+                        ${!isUser ? `<button onclick="regenerateAIResponseTrack(${index})" class="hover:text-white transition-colors" title="Recompile Trace Pipeline"><i class="fa-solid fa-rotate-left mr-0.5"></i>Regen</button>` : ''}
+                    </div>
+                </div>
+            `;
+            streamBox.appendChild(wrapper);
+        }
+
+        function parseSystemMarkdown(src) {
+            let trace = escapeTextHTML(src);
+            
+            // Render multi-line code block arrays seamlessly with absolute isolation guards
+            trace = trace.replace(/```([\s\S]*?)```/g, (match, block) => {
+                const parts = block.trim().split('\n');
+                let targetLang = "Buffer Object";
+                if (parts[0].length < 15 && !parts[0].includes(' ') && parts[0] !== '') {
+                    targetLang = parts.shift().toUpperCase();
+                }
+                const cleanBlockCode = parts.join('\n');
+                return `<div class="my-3 rounded-xl overflow-hidden border border-white/10 bg-slate-950 text-slate-200 font-mono text-xs shadow-inner">
+                    <div class="bg-white/5 px-4 py-1.5 flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-slate-400 border-b border-white/5">
+                        <span>${targetLang}</span>
+                        <button onclick="copyPayloadBuffer('${btoa(unescape(encodeURIComponent(cleanBlockCode)))}')" class="hover:text-white transition-all"><i class="fa-solid fa-copy"></i></button>
+                    </div>
+                    <pre class="p-4 overflow-x-auto whitespace-pre-wrap break-all select-all">${cleanBlockCode}</pre>
+                </div>`;
+            });
+
+            // Inline Code execution formatting block map
+            trace = trace.replace(/`([^`]+)`/g, '<code class="font-mono text-xs px-1 py-0.5 bg-black/30 rounded text-indigo-300">$1</code>');
+            // Bold element string parser configurations
+            trace = trace.replace(/\*\*([\s\S]+?)\*\*/g, '<strong class="font-bold text-white light:text-slate-900">$1</strong>');
+            // Italic processing blocks
+            trace = trace.replace(/\*([\s\S]+?)\*/g, '<em class="italic opacity-90">$1</em>');
+            // Structural line return normalization lists split engines
+            return trace.split('\n').map(ln => {
+                if (ln.startsWith('- ') || ln.startsWith('* ')) {
+                    return `<ul class="list-disc pl-4 my-1"><li>${ln.substring(2)}</li></ul>`;
+                }
+                if (/^\d+\.\s/.test(ln)) {
+                    const matchIdx = ln.indexOf(' ');
+                    return `<ol class="list-decimal pl-4 my-1"><li>${ln.substring(matchIdx + 1)}</li></ol>`;
+                }
+                return ln ? `<p class="mb-1.5 last:mb-0">${ln}</p>` : '';
+            }).join('');
+        }
+
+        function escapeTextHTML(input) {
+            return input.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        async function dispatchUserMessage() {
+            const promptArea = document.getElementById('prompt-textarea');
+            const userTextStr = promptArea.value.trim();
+            
+            if (!userTextStr && systemState.stagedAttachments.length === 0) return;
+
+            // Ensure valid network operational link
+            if (!navigator.onLine) {
+                showToast("Execution fault: Operational network hardware linkage unavailable.", "error");
+                return;
+            }
+
+            const apiKey = localStorage.getItem("gemini_api_key");
+            if (!apiKey) {
+                showToast("Missing authentication credentials. Access the Control Panel to provision an API Token.", "error");
+                showSection('settings');
+                return;
+            }
+
+            // Select matching chat trace target reference block
+            const currentChat = systemState.vault.chats.find(c => c.id === systemState.activeChatId);
+            if (!currentChat) return;
+
+            // Enqueue text message matrix
+            const userMsgObj = {
+                role: 'user',
+                text: userTextStr || "[Dispatched Binary Payload]",
+                timestamp: Date.now(),
+                attachments: [...systemState.stagedAttachments]
+            };
+
+            currentChat.messages.push(userMsgObj);
+            appendMessageToDOM('user', userMsgObj.text, userMsgObj.attachments);
+            
+            // Clean interface buffers
+            promptArea.value = '';
+            adjustTextareaHeight(promptArea);
+            document.getElementById('attachment-preview-deck').innerHTML = '';
+            document.getElementById('attachment-preview-deck').classList.add('hidden');
+
+            // Generate typing indicator sequence
+            injectSystemProcessingIndicator();
+            scrollToBottomSmoothly();
+
+            // Fire remote system fetch requests
+            systemState.activeAbortController = new AbortController();
+            
+            try {
+                // Build execution schema content vectors
+                let inlineContentsPayload = [];
+                
+                // Track historical message lines formatting
+                currentChat.messages.slice(-12, -1).forEach(m => {
+                    let partsArray = [{ text: m.text }];
+                    if (m.attachments && m.attachments.length > 0) {
+                        m.attachments.forEach(a => {
+                            if (a.type.startsWith('image/')) {
+                                const base64CleanData = a.data.split(',')[1];
+                                partsArray.unshift({
+                                    inlineData: { mimeType: a.type, data: base64CleanData }
+                                });
+                            }
+                        });
+                    }
+                    inlineContentsPayload.push({
+                        role: m.role === 'user' ? 'user' : 'model',
+                        parts: partsArray
+                    });
+                });
+
+                // Attach newest primary item vectors
+                let newestParts = [{ text: userMsgObj.text }];
+                if (systemState.stagedAttachments.length > 0) {
+                    systemState.stagedAttachments.forEach(a => {
+                        if (a.type.startsWith('image/')) {
+                            const base64CleanData = a.data.split(',')[1];
+                            newestParts.unshift({
+                                inlineData: { mimeType: a.type, data: base64CleanData }
+                            });
+                        }
+                    });
+                }
+                inlineContentsPayload.push({ role: 'user', parts: newestParts });
+
+                // Flush active storage parameters
+                systemState.stagedAttachments = [];
+
+                const gatewayUrl = `https://generativelanguage.googleapis.com/v1beta/models/${systemState.activeModel}:generateContent?key=${apiKey}`;
+                
+                const response = await fetch(gatewayUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: inlineContentsPayload }),
+                    signal: systemState.activeAbortController.signal
+                });
+
+                removeSystemProcessingIndicator();
+
+                if (!response.ok) {
+                    const structuralErrJson = await response.json();
+                    throw new Error(structuralErrJson.error?.message || "Internal core execution processing fault.");
+                }
+
+                const dataJson = await response.json();
+                const processedModelResponseText = dataJson.candidates[0].content.parts[0].text;
+
+                const modelMsgObj = {
+                    role: 'model',
+                    text: processedModelResponseText,
+                    timestamp: Date.now(),
+                    attachments: []
+                };
+
+                currentChat.messages.push(modelMsgObj);
+                appendMessageToDOM('model', modelMsgObj.text, []);
+                
+                // Auto title processing context updates on fresh chains
+                if (currentChat.messages.length === 3) {
+                    currentChat.title = userMsgObj.text.substring(0, 26) + (userMsgObj.text.length > 26 ? '...' : '');
+                }
+
+                saveChats();
+                renderChatHistoryVault();
+                scrollToBottomSmoothly();
+
+            } catch (error) {
+                removeSystemProcessingIndicator();
+                if (error.name !== 'AbortError') {
+                    showToast(`API Cluster Fault: ${error.message}`, 'error');
+                    const errErrObj = {
+                        role: 'model',
+                        text: `⚠️ **Processing Vector Fault Interruption:** Unable to compute response cluster values. \n\`\`\`\n${error.message}\n\`\`\``,
+                        timestamp: Date.now(),
+                        attachments: []
+                    };
+                    currentChat.messages.push(errErrObj);
+                    appendMessageToDOM('model', errErrObj.text, []);
+                    saveChats();
+                }
+            } finally {
+                systemState.activeAbortController = null;
+                document.getElementById('stop-generation-btn').classList.add('hidden');
+            }
+        }
+
+        function regenerateAIResponseTrack(messageIndex) {
+            const currentChat = systemState.vault.chats.find(c => c.id === systemState.activeChatId);
+            if (!currentChat) return;
+            
+            // Prune trace stack items downstream from source targets
+            currentChat.messages = currentChat.messages.slice(0, messageIndex);
+            saveChats();
+            
+            // Re-render frame updates and fire generation queries
+            mountActiveChatThread(systemState.activeChatId);
+            
+            // Extract trailing item prompt strings manually to re-trigger compilation
+            const lastUserMsg = [...currentChat.messages].reverse().find(m => m.role === 'user');
+            if (lastUserMsg) {
+                // Wipe last element safely out of state so array handles pipeline correctly
+                currentChat.messages.pop();
+                systemState.stagedAttachments = lastUserMsg.attachments || [];
+                document.getElementById('prompt-textarea').value = lastUserMsg.text;
+                dispatchUserMessage();
+            }
+        }
+
+        function injectSystemProcessingIndicator() {
+            document.getElementById('stop-generation-btn').classList.remove('hidden');
+            const streamBox = document.getElementById('chat-thread-box');
+            const indicatorNode = document.createElement('div');
+            indicatorNode.id = "system-typing-indicator-node";
+            indicatorNode.className = "flex justify-start w-full";
+            indicatorNode.innerHTML = `
+                <div class="glass-card border border-white/5 rounded-2xl rounded-bl-none p-4 flex items-center gap-1.5 shadow-md">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-purple-400 typing-dot"></span>
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 typing-dot"></span>
+                </div>
+            `;
+            streamBox.appendChild(indicatorNode);
+        }
+
+        function removeSystemProcessingIndicator() {
+            const target = document.getElementById("system-typing-indicator-node");
+            if (target) target.remove();
+            document.getElementById('stop-generation-btn').classList.add('hidden');
+        }
+
+        function abortAISession() {
+            if (systemState.activeAbortController) {
+                systemState.activeAbortController.abort();
+                removeSystemProcessingIndicator();
+                showToast("System calculation track aborted by user.", "warning");
+            }
+        }
+
+        // DYNAMIC RENDERING INTERFACES (HISTORY VAULTS)
+        function renderChatHistoryVault() {
+            const container = document.getElementById('chat-history-list');
+            container.innerHTML = '';
+            
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+
+            systemState.vault.chats.forEach(chat => {
+                if (searchVal && !chat.title.toLowerCase().includes(searchVal)) return;
+
+                const isActive = chat.id === systemState.activeChatId;
+                const row = document.createElement('div');
+                row.className = `group flex items-center justify-between p-2.5 rounded-xl text-xs font-medium transition-all ${
+                    isActive 
+                    ? 'bg-accent/15 border border-accent/30 text-white light:text-slate-900 font-semibold shadow-sm' 
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 light:hover:bg-slate-900/5'
+                }`;
+                
+                row.innerHTML = `
+                    <div onclick="mountActiveChatThread('${chat.id}')" class="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
+                        <i class="fa-solid fa-message text-[11px] ${isActive ? 'text-accent' : 'opacity-60'} shrink-0"></i>
+                        <span id="label-text-${chat.id}" class="truncate pr-2">${escapeTextHTML(chat.title)}</span>
+                    </div>
+                    <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                        <button onclick="triggerRenameSessionFlow('${chat.id}')" class="w-5 h-5 rounded hover:bg-white/10 flex items-center justify-center text-slate-400 hover:text-white" title="Rename Session Track"><i class="fa-solid fa-pen text-[10px]"></i></button>
+                        <button onclick="terminateSessionTrack('${chat.id}')" class="w-5 h-5 rounded hover:bg-rose-500/20 flex items-center justify-center text-slate-400 hover:text-rose-400" title="Purge Track Elements"><i class="fa-solid fa-trash text-[10px]"></i></button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function filterChats() {
+            renderChatHistoryVault();
+        }
+
+        function triggerRenameSessionFlow(chatId) {
+            const targetChat = systemState.vault.chats.find(c => c.id === chatId);
+            if (!targetChat) return;
+            
+            const freshName = prompt("Enter new identifier tag for this configuration stream:", targetChat.title);
+            if (freshName && freshName.trim() !== '') {
+                targetChat.title = freshName.trim();
+                saveChats();
+                renderChatHistoryVault();
+                if (systemState.activeChatId === chatId) {
+                    document.getElementById('current-view-title').textContent = freshName.trim();
+                }
+                showToast("Session identifier token altered successfully.", "success");
+            }
+        }
+
+        function terminateSessionTrack(chatId) {
+            if (confirm("Execute total deletion sequence on target context records?")) {
+                systemState.vault.chats = systemState.vault.chats.filter(c => c.id !== chatId);
+                saveChats();
+                
+                if (systemState.activeChatId === chatId) {
+                    if (systemState.vault.chats.length > 0) {
+                        mountActiveChatThread(systemState.vault.chats[0].id);
+                    } else {
+                        createNewChat();
+                    }
+                } else {
+                    renderChatHistoryVault();
+                }
+                showToast("Target contextual trace logs completely scrubbed.", "warning");
+            }
+        }
+
+        function switchActiveModel(modelIdent) {
+            systemState.activeModel = modelIdent;
+            const currentChat = systemState.vault.chats.find(c => c.id === systemState.activeChatId);
+            if (currentChat) {
+                currentChat.model = modelIdent;
+                saveChats();
+            }
+            showSection(systemState.activeView);
+            showToast(`Execution routed to: ${modelIdent.toUpperCase()}`, 'success');
+        }
+
+        // MULTI-MODAL BINARY INTERFACE ACCESSORS
+        function triggerAttachmentPicker() {
+            document.getElementById('universal-file-picker').click();
+        }
+
+        function processSelectedAttachments(event) {
+            const files = event.target.files;
+            const outputDeck = document.getElementById('attachment-preview-deck');
+            
+            Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                
+                // Restrict extreme file load dimensions
+                if (file.size > 4 * 1024 * 1024) {
+                    showToast(`Payload execution fault: ${file.name} overflows 4MB allocation limit.`, "error");
+                    return;
+                }
+
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    const attachmentPayload = {
+                        id: 'attach_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                        name: file.name,
+                        type: file.type,
+                        data: dataUrl
+                    };
+                    
+                    systemState.stagedAttachments.push(attachmentPayload);
+                    outputDeck.classList.remove('hidden');
+
+                    // Draw thumbnail chips
+                    const chip = document.createElement('div');
+                    chip.id = `chip_${attachmentPayload.id}`;
+                    chip.className = "bg-slate-900 border border-white/10 p-1.5 rounded-xl flex items-center gap-2 pr-2.5 text-xs text-slate-300 shadow-sm";
+                    
+                    if (file.type.startsWith('image/')) {
+                        chip.innerHTML = `<img src="${dataUrl}" class="w-7 h-7 object-cover rounded-md"><span class="max-w-[100px] truncate">${file.name}</span><button onclick="severAttachmentChip('${attachmentPayload.id}')" class="text-slate-400 hover:text-rose-400 ml-1"><i class="fa-solid fa-xmark"></i></button>`;
+                    } else {
+                        chip.innerHTML = `<div class="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center text-indigo-400"><i class="fa-solid fa-file-invoice"></i></div><span class="max-w-[100px] truncate">${file.name}</span><button onclick="severAttachmentChip('${attachmentPayload.id}')" class="text-slate-400 hover:text-rose-400 ml-1"><i class="fa-solid fa-xmark"></i></button>`;
+                    }
+                    outputDeck.appendChild(chip);
+                };
+                reader.readAsDataURL(file);
+            });
+            // Flush target parameters element to catch identical cycles
+            event.target.value = '';
+        }
+
+        function severAttachmentChip(id) {
+            systemState.stagedAttachments = systemState.stagedAttachments.filter(a => a.id !== id);
+            const node = document.getElementById(`chip_${id}`);
+            if (node) node.remove();
+            
+            if (systemState.stagedAttachments.length === 0) {
+                document.getElementById('attachment-preview-deck').classList.add('hidden');
+            }
+        }
+
+        // ARTISTIC COMPOSITION COGNITION LAYER (IMAGE GENERATOR)
+        function setImageAspectRatio(ratio) {
+            systemState.currentAspectRatio = ratio;
+            document.querySelectorAll('.ratio-btn').forEach(btn => {
+                if (btn.getAttribute('data-ratio') === ratio) {
+                    btn.className = "ratio-btn py-2 rounded-xl text-xs font-medium border border-indigo-500 bg-indigo-500/10 text-white transition-all";
+                } else {
+                    btn.className = "ratio-btn py-2 rounded-xl text-xs font-medium border border-white/5 bg-slate-900/40 text-slate-400 hover:text-white transition-all";
+                }
+            });
+        }
+
+        function executeVisualSynthesis() {
+            const promptInput = document.getElementById('image-prompt-input');
+            const rawPrompt = promptInput.value.trim();
+
+            if (!rawPrompt) {
+                showToast("Artistic compilation request requires valid textual prompt coordinates.", "error");
+                return;
+            }
+
+            const dimensions = document.getElementById('image-dimension-selector').value;
+
+            // Trigger visual staging canvas sandbox containers
+            document.getElementById('image-sandbox-monitor').classList.remove('hidden');
+            document.getElementById('image-processing-loader').classList.remove('hidden');
+            document.getElementById('image-processing-result').classList.add('hidden');
+
+            // Procedural Client-Side Visual Synthesis Engine Simulation
+            // Employs cryptographic seed processing to draw deterministic, high-fidelity procedural artworks directly onto client base64 vectors!
+            setTimeout(() => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const dimensionsArray = dimensions.split('x');
+                    const w = parseInt(dimensionsArray[0]) || 1024;
+                    const h = parseInt(dimensionsArray[1]) || 1024;
+                    
+                    // Remap dimensions according to targets
+                    canvas.width = w;
+                    canvas.height = h;
+                    
+                    if (systemState.currentAspectRatio === '16:9') { canvas.height = Math.floor(w * 9/16); }
+                    if (systemState.currentAspectRatio === '9:16') { canvas.width = Math.floor(h * 9/16); }
+
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Create beautiful mathematical gradient mappings based on prompt strings
+                    let hashVal = 0;
+                    for (let i = 0; i < rawPrompt.length; i++) {
+                        hashVal = rawPrompt.charCodeAt(i) + ((hashVal << 5) - hashVal);
+                    }
+                    
+                    const angleHue1 = Math.abs(hashVal % 360);
+                    const angleHue2 = (angleHue1 + 120) % 360;
+                    
+                    const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                    grad.addColorStop(0, `hsl(${angleHue1}, 75%, 15%)`);
+                    grad.addColorStop(0.5, `hsl(${(angleHue1 + 60) % 360}, 80%, 20%)`);
+                    grad.addColorStop(1, `hsl(${angleHue2}, 85%, 10%)`);
+                    
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw abstract procedural geometry structures
+                    ctx.strokeStyle = "rgba(255,255,255,0.08)";
+                    ctx.lineWidth = 2;
+                    for (let j = 0; j < 40; j++) {
+                        ctx.beginPath();
+                        const arcRad = Math.abs(Math.sin(hashVal + j) * canvas.width * 0.6);
+                        ctx.arc(canvas.width / 2 + Math.cos(j) * 100, canvas.height / 2 + Math.sin(j) * 100, arcRad, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+
+                    // Render typographical watermarks
+                    ctx.fillStyle = "rgba(255,255,255,0.25)";
+                    ctx.font = "bold 24px 'Space Grotesk', monospace";
+                    ctx.fillText("AURA NEURAL GRAPHICS CORE", 40, canvas.height - 80);
+                    ctx.fillStyle = "rgba(255,255,255,0.15)";
+                    ctx.font = "14px monospace";
+                    ctx.fillText(`PROMPT HASH VECTOR ID: [${hashVal}] // ASPECT ${systemState.currentAspectRatio} // SCALE ${dimensions}`, 40, canvas.height - 50);
+
+                    const finalGeneratedBase64Url = canvas.toDataURL('image/jpeg', 0.92);
+
+                    // Frame database log object structures
+                    const imageLogItem = {
+                        id: 'img_' + Date.now(),
+                        prompt: rawPrompt,
+                        url: finalGeneratedBase64Url,
+                        aspect: systemState.currentAspectRatio,
+                        size: dimensions,
+                        timestamp: Date.now()
+                    };
+
+                    systemState.vault.images.unshift(imageLogItem);
+                    saveImageHistory();
+
+                    // Mount parameters directly onto active image frame controls
+                    const resultImg = document.getElementById('compiled-sandbox-img');
+                    resultImg.src = finalGeneratedBase64Url;
+                    
+                    document.getElementById('compiled-img-tag').textContent = rawPrompt;
+                    
+                    // Bind actions dynamically
+                    document.getElementById('compiled-dl-btn').onclick = () => downloadImageResource(imageLogItem.id);
+                    document.getElementById('compiled-share-btn').onclick = () => shareImageResource(imageLogItem.id);
+
+                    document.getElementById('image-processing-loader').classList.add('hidden');
+                    document.getElementById('image-processing-result').classList.remove('hidden');
+                    
+                    promptInput.value = '';
+                    showToast("Synthesis processing loop compiled successfully.", "success");
+
+                } catch (err) {
+                    showToast("Graphics engine runtime exception fault: " + err.message, "error");
+                    document.getElementById('image-sandbox-monitor').classList.add('hidden');
+                }
+            }, 2400);
+        }
+
+        function renderImageHistoryVault() {
+            const container = document.getElementById('image-history-list');
+            container.innerHTML = '';
+
+            if (systemState.vault.images.length === 0) {
+                container.innerHTML = `<p class="text-[11px] text-slate-500 col-span-2 text-center py-8 font-mono">Image gallery database empty.</p>`;
+                return;
+            }
+
+            systemState.vault.images.forEach(img => {
+                const item = document.createElement('div');
+                item.className = "relative rounded-xl overflow-hidden group aspect-square border border-white/5 bg-slate-900 shadow-sm cursor-pointer";
+                item.innerHTML = `
+                    <img src="${img.url}" alt="Vault Visual" class="w-full h-full object-cover">
+                    <div class="absolute inset-0 bg-slate-950/80 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col justify-between p-2">
+                        <p class="text-[10px] text-white font-medium line-clamp-3 leading-tight tracking-wide">${escapeTextHTML(img.prompt)}</p>
+                        <div class="flex items-center justify-end gap-1 pt-1 border-t border-white/10 mt-1">
+                            <button onclick="downloadImageResource('${img.id}')" class="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center hover:bg-white/20 text-[10px]"><i class="fa-solid fa-download"></i></button>
+                            <button onclick="purgeImageResource('${img.id}')" class="w-6 h-6 rounded bg-rose-500/20 text-rose-400 flex items-center justify-center hover:bg-rose-500/30 text-[10px]"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function downloadImageResource(imgId) {
+            const match = systemState.vault.images.find(i => i.id === imgId);
+            if (!match) return;
+
+            const dlAnchor = document.createElement('a');
+            dlAnchor.href = match.url;
+            dlAnchor.download = `AURA_SYNTHESIS_${imgId}.jpg`;
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            document.body.removeChild(dlAnchor);
+            showToast("Binary visual file piped to local downloads stream.", "success");
+        }
+
+        function shareImageResource(imgId) {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'AURA AI Architectural Artwork Asset',
+                    text: 'Procedural visual matrix asset generated via AURA client platform engines.',
+                    url: window.location.href
+                }).catch(() => {});
+            } else {
+                copyPayloadBuffer(btoa(window.location.href));
+                showToast("System runtime lacks native asset sharing pipelines. App path copied to clipboard.", "warning");
+            }
+        }
+
+        function purgeImageResource(imgId) {
+            systemState.vault.images = systemState.vault.images.filter(i => i.id !== imgId);
+            saveImageHistory();
+            renderImageHistoryVault();
+            document.getElementById('image-sandbox-monitor').classList.add('hidden');
+            showToast("Visual repository asset destroyed.", "warning");
+        }
+
+        // HARDWARE & VOICE SYSTEMS CONFIGURATIONS
+        function toggleVoiceDictation() {
+            if (!systemState.speechRecognitionEngine) {
+                showToast("System lacks speech integration pipelines or active device permissions.", "error");
+                return;
+            }
+
+            if (systemState.isDictating) {
+                deactivateVoiceUIState();
+            } else {
+                systemState.isDictating = true;
+                const vBtn = document.getElementById('voice-dictation-btn');
+                vBtn.className = "w-8 h-8 rounded-lg flex items-center justify-center bg-rose-500 text-white animate-pulse active:scale-90 transition-all";
+                systemState.speechRecognitionEngine.start();
+                showToast("Audio capture microphone matrix online. Stream ingestion active.", "success");
+            }
+        }
+
+        function deactivateVoiceUIState() {
+            systemState.isDictating = false;
+            const vBtn = document.getElementById('voice-dictation-btn');
+            vBtn.className = "w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/5 active:scale-90 transition-all";
+            if (systemState.speechRecognitionEngine) systemState.speechRecognitionEngine.stop();
+            showToast("Audio capture microphone tracking offline.", "warning");
+        }
+
+        // UTILITIES & HELPER INTERFACES
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        function handleTextAreaKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                dispatchUserMessage();
+            }
+        }
+
+        function toggleVisibility(fieldId) {
+            const element = document.getElementById(fieldId);
+            if (element.type === 'password') {
+                element.type = 'text';
+            } else {
+                element.type = 'password';
+            }
+        }
+
+        function copyPayloadBuffer(base64PayloadString) {
+            try {
+                const decodedString = decodeURIComponent(escape(atob(base64PayloadString)));
+                navigator.clipboard.writeText(decodedString).then(() => {
+                    showToast("Context buffer block string copied to operational clipboard.", "success");
+                });
+            } catch (err) {
+                showToast("Buffer read error.", "error");
+            }
+        }
+
+        function updateNetworkStatusIndicator() {
+            const netStatus = document.getElementById('network-status');
+            if (navigator.onLine) {
+                netStatus.textContent = "Connected";
+                netStatus.parentElement.className = "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-medium";
+            } else {
+                netStatus.textContent = "Offline Model";
+                netStatus.parentElement.className = "flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-400 font-medium animate-bounce";
+                showToast("System infrastructure link state broken. Check hardware loops.", "error");
+            }
+        }
+
+        function showToast(msgText, level = 'success') {
+            const box = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let levelClassColors = "bg-slate-900 border-indigo-500/30 text-indigo-400";
+            let levelIcon = '<i class="fa-solid fa-circle-info"></i>';
+            
+            if (level === 'error') {
+                levelClassColors = "bg-slate-950 border-rose-500/40 text-rose-400";
+                levelIcon = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else if (level === 'warning') {
+                levelClassColors = "bg-slate-900 border-amber-500/40 text-amber-400";
+                levelIcon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            toast.className = `p-3.5 rounded-xl border flex items-start gap-3 shadow-2xl pointer-events-auto transition-all duration-300 transform translate-x-12 opacity-0 glass-panel ${levelClassColors}`;
+            toast.innerHTML = `
+                <span class="text-sm pt-0.5">${levelIcon}</span>
+                <p class="text-xs font-medium tracking-wide leading-normal pr-2">${msgText}</p>
+            `;
+            box.appendChild(toast);
+
+            // Reflow engine trigger animation parameters
+            setTimeout(() => {
+                toast.classList.remove('translate-x-12', 'opacity-0');
+            }, 50);
+
+            // Deconstruction timer schedules
+            setTimeout(() => {
+                toast.classList.add('translate-x-12', 'opacity-0');
+                setTimeout(() => { toast.remove(); }, 300);
+            }, 3800);
+        }
+
+        function scrollToBottomSmoothly() {
+            const streamBox = document.getElementById('chat-thread-box');
+            setTimeout(() => {
+                streamBox.scrollTop = streamBox.scrollHeight;
+            }, 50);
+        }
+
+        // STORAGE MANAGEMENT CORE SUBSYSTEM LAYER (LOCALSTORAGE)
+        function commitAPIKey() {
+            const inputVal = document.getElementById('input-api-key').value.trim();
+            if (inputVal) {
+                localStorage.setItem("gemini_api_key", inputVal);
+                showToast("Google Gemini Cloud verification credential updated.", "success");
+            } else {
+                localStorage.removeItem("gemini_api_key");
+                showToast("Credential container stripped clean.", "warning");
+            }
+        }
+
+        function saveChats() {
+            localStorage.setItem("aura_vault_chats", JSON.stringify(systemState.vault.chats));
+        }
+
+        function loadChats() {
+            const raw = localStorage.getItem("aura_vault_chats");
+            if (raw) {
+                try { systemState.vault.chats = JSON.parse(raw); } catch(e) { systemState.vault.chats = []; }
+            }
+            renderChatHistoryVault();
+        }
+
+        function saveImageHistory() {
+            localStorage.setItem("aura_vault_images", JSON.stringify(systemState.vault.images));
+        }
+
+        function loadImageHistory() {
+            const raw = localStorage.getItem("aura_vault_images");
+            if (raw) {
+                try { systemState.vault.images = JSON.parse(raw); } catch(e) { systemState.vault.images = []; }
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem("aura_vault_settings", JSON.stringify(systemState.vault.settings));
+        }
+
+        function loadSettings() {
+            const raw = localStorage.getItem("aura_vault_settings");
+            if (raw) {
+                try { systemState.vault.settings = { ...systemState.vault.settings, ...JSON.parse(raw) }; } catch(e) {}
+            }
+            // Hydrate control input targets explicitly
+            const key = localStorage.getItem("gemini_api_key");
+            if (key) document.getElementById('input-api-key').value = key;
+
+            document.getElementById('setting-font-size').value = systemState.vault.settings.fontSize || '14px';
+            document.getElementById('setting-language').value = systemState.vault.settings.language || 'en';
+        }
+
+        function setThemeLuminance(mode) {
+            systemState.vault.settings.luminance = mode;
+            saveSettings();
+            applyConfigurationTransforms();
+            showToast(`Luminance profile assigned: ${mode.toUpperCase()}`, "success");
+        }
+
+        function setUIPrimaryAccent(rgbString, gradientCSS) {
+            systemState.vault.settings.accentColor = rgbString;
+            systemState.vault.settings.accentGradient = gradientCSS;
+            saveSettings();
+            applyConfigurationTransforms();
+            showToast("Primary theme accent identity adjusted.", "success");
+        }
+
+        function applyConfigurationTransforms() {
+            const settings = systemState.vault.settings;
+            
+            // Apply theme tone
+            const htmlNode = document.documentElement;
+            if (settings.luminance === 'light') {
+                htmlNode.classList.remove('dark');
+                htmlNode.classList.add('light');
+                document.getElementById('theme-btn-light').className = "py-2 px-3 rounded-xl border border-indigo-500 bg-indigo-500/10 text-xs font-medium flex items-center justify-center gap-2 text-indigo-400";
+                document.getElementById('theme-btn-dark').className = "py-2 px-3 rounded-xl border border-white/5 bg-slate-900/40 text-slate-400 text-xs font-medium flex items-center justify-center gap-2";
+            } else {
+                htmlNode.classList.remove('light');
+                htmlNode.classList.add('dark');
+                document.getElementById('theme-btn-dark').className = "py-2 px-3 rounded-xl border border-indigo-500 bg-indigo-500/10 text-xs font-medium flex items-center justify-center gap-2 text-indigo-400";
+                document.getElementById('theme-btn-light').className = "py-2 px-3 rounded-xl border border-white/5 bg-slate-900/40 text-slate-400 text-xs font-medium flex items-center justify-center gap-2";
+            }
+
+            // Sync structural variable nodes
+            document.documentElement.style.setProperty('--accent-color', settings.accentColor);
+            document.documentElement.style.setProperty('--accent-gradient', settings.accentGradient);
+
+            // Pull inputs to apply sizing targets across conversation components
+            const fontScale = document.getElementById('setting-font-size').value;
+            systemState.vault.settings.fontSize = fontScale;
+            document.getElementById('chat-thread-box').style.fontSize = fontScale;
+            
+            systemState.vault.settings.language = document.getElementById('setting-language').value;
+            saveSettings();
+        }
+
+        function clearSystemHistoryStores(targetKey) {
+            if (confirm(`Execute total unrecoverable scrubbing process over targeted spatial history parameters [${targetKey.toUpperCase()}]?`)) {
+                if (targetKey === 'chats') {
+                    systemState.vault.chats = [];
+                    saveChats();
+                    createNewChat();
+                } else {
+                    systemState.vault.images = [];
+                    saveImageHistory();
+                    renderImageHistoryVault();
+                }
+                showToast("Targeted local store values purged completely.", "warning");
+            }
+        }
+
+        function exportWorkspaceContextData() {
+            const exportObjectBlobString = JSON.stringify(systemState.vault, null, 2);
+            const rawDataBlob = new Blob([exportObjectBlobString], { type: 'application/json' });
+            const temporaryAnchor = document.createElement('a');
+            
+            temporaryAnchor.href = URL.createObjectURL(rawDataBlob);
+            temporaryAnchor.download = `AURA_WORKSPACE_VAULT_BACKUP_${Date.now()}.json`;
+            document.body.appendChild(temporaryAnchor);
+            temporaryAnchor.click();
+            document.body.removeChild(temporaryAnchor);
+            showToast("System workspace configurations exported safely.", "success");
+        }
+
+        function triggerImportSelection() {
+            document.getElementById('import-data-picker').click();
+        }
+
+        function handleWorkspaceContextImport(event) {
+            const selectedFile = event.target.files[0];
+            if (!selectedFile) return;
+
+            const readerInstance = new FileReader();
+            readerInstance.onload = (e) => {
+                try {
+                    const parsedStructure = JSON.parse(e.target.result);
+                    if (parsedStructure.chats || parsedStructure.images || parsedStructure.settings) {
+                        systemState.vault = { ...systemState.vault, ...parsedStructure };
+                        saveSettings();
+                        saveChats();
+                        saveImageHistory();
+                        initializeSystemInfrastructure();
+                        showToast("System data parameters restored successfully.", "success");
+                    } else {
+                        throw new Error("Invalid object schema map properties.");
+                    }
+                } catch (err) {
+                    showToast("Vault file corrupted. Ingestion failed: " + err.message, "error");
+                }
+            };
+            readerInstance.readAsText(selectedFile);
+            event.target.value = '';
+        }
+    </script>
+</body>
+  </html>
+                                  
