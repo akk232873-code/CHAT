@@ -125,7 +125,7 @@
 
                     if (mode === 'chat') {
                         // GEMINI 2.5 FLASH TEXT API
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${AQ.Ab8RN6J8ErI8zClfw6fe2d8dbpTVLfkfpR9jjcbcWHeBV9VpaA}`;
                         const payload = {
                             contents: [{ parts: [{ text: text }] }],
                             systemInstruction: { parts: [{ text: systemInstruction }] }
@@ -138,7 +138,7 @@
                         setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, aiMsg] } : s));
                     } else {
                         // IMAGEN 4.0 IMAGE API
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${AQ.Ab8RN6J8ErI8zClfw6fe2d8dbpTVLfkfpR9jjcbcWHeBV9VpaA}`;
                         const payload = { instances: { prompt: text }, parameters: { sampleCount: 1 } };
                         
                         const data = await executeApi(url, payload);
