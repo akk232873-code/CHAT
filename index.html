@@ -2,1202 +2,428 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChaT - AI Assistant</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Rayyan AI Assistant</title>
+    
+    <!-- Tailwind CSS for Premium Styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <!-- React & ReactDOM -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        /* Premium Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
         
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-            transition: background-color 0.3s, color 0.3s;
-        }
-
-        .dark body {
-            background-color: #111827;
-            color: #f3f4f6;
-        }
-
-        .chat-container {
-            height: calc(100vh - 180px);
-        }
-
-        .message-enter {
-            animation: slideUp 0.3s ease-out forwards;
-            opacity: 0;
-            transform: translateY(20px);
-        }
-
-        @keyframes slideUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .dark ::-webkit-scrollbar-thumb {
-            background: #475569;
-        }
-
-        .typing-indicator span {
-            animation: blink 1.4s infinite both;
-            height: 6px;
-            width: 6px;
-            background-color: #3b82f6;
-            border-radius: 50%;
-            display: inline-block;
-            margin: 0 1px;
-        }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes blink {
-            0% { opacity: .2; }
-            20% { opacity: 1; }
-            100% { opacity: .2; }
-        }
-
-        .markdown-body pre {
-            background-color: #1e293b !important;
-            color: #e2e8f0;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            overflow-x: auto;
-            margin: 0.5rem 0;
-        }
-        .markdown-body code {
-            background-color: rgba(0,0,0,0.1);
-            padding: 0.2rem 0.4rem;
-            border-radius: 0.25rem;
-            font-family: monospace;
-        }
-        .dark .markdown-body code {
-            background-color: rgba(255,255,255,0.1);
-        }
+        /* Glassmorphism utilities */
+        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
         
-        /* Modal transitions */
-        .modal-enter {
-            opacity: 0;
-            transform: scale(0.95);
-            transition: all 0.2s ease-out;
-        }
-        .modal-enter-active {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* Image gallery grid */
-        .image-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 1rem;
-        }
+        body { background-color: #020617; color: #f8fafc; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     </style>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        'primary-dark': '#2563eb',
+</head>
+<body>
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- PREMIUM ICONS (SVG) ---
+        const Icons = {
+            Sparkles: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5.5Z"/><path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z"/></svg>,
+            Image: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><rect width="18" height="18" x="3" y="3" rx="4" ry="4"/><circle cx="9" cy="9" r="2.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
+            Send: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
+            Menu: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
+            Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
+            MessageSquare: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${className}`}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+            Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
+            Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
+            Copy: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
+            Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-400"><polyline points="20 6 9 17 4 12"></polyline></svg>,
+            Download: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
+            User: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        };
+
+        function App() {
+            // STATE MANAGEMENT
+            const [sessions, setSessions] = useState([{ id: 'sess-1', title: 'New Chat', messages: [] }]);
+            const [activeSession, setActiveSession] = useState('sess-1');
+            const [input, setInput] = useState('');
+            const [mode, setMode] = useState('chat'); // 'chat' | 'art'
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
+            const [showSettings, setShowSettings] = useState(false);
+            const [copiedId, setCopiedId] = useState(null);
+            
+            const [systemInstruction, setSystemInstruction] = useState(
+                "You are Rayyan AI, an elite, helpful, and highly intelligent AI assistant. Provide well-structured, creative, and highly accurate responses. Use markdown formatting for readability."
+            );
+
+            const messagesEndRef = useRef(null);
+
+            // Auto Scroll
+            useEffect(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [sessions, isGenerating]);
+
+            // Handle Resize for Sidebar
+            useEffect(() => {
+                const handleResize = () => setSidebarOpen(window.innerWidth >= 1024);
+                window.addEventListener('resize', handleResize);
+                return () => window.removeEventListener('resize', handleResize);
+            }, []);
+
+            const currentSession = sessions.find(s => s.id === activeSession) || sessions[0];
+
+            // ROBUST API CALLER WITH RETRY
+            const executeApi = async (url, payload, maxRetries = 3) => {
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error("API Error");
+                        return await response.json();
+                    } catch (err) {
+                        if (i === maxRetries - 1) throw err;
+                        await new Promise(res => setTimeout(res, 1000 * Math.pow(2, i)));
                     }
                 }
-            }
-        }
-    </script>
-</head>
-<body class="h-screen flex overflow-hidden text-gray-800 transition-colors duration-200">
-
-    <!-- Sidebar -->
-    <aside id="sidebar" class="w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300 absolute md:relative z-20 h-full transform -translate-x-full md:translate-x-0">
-        <div class="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
-                <i class="fa-solid fa-robot"></i> ChaT
-            </h1>
-            <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                <i class="fa-solid fa-times"></i>
-            </button>
-        </div>
-
-        <div class="p-4 flex flex-col gap-2">
-            <button onclick="startNewChat()" class="w-full bg-primary hover:bg-primary-dark text-white rounded-lg py-2 px-4 flex items-center justify-center gap-2 transition-colors">
-                <i class="fa-solid fa-plus"></i> New Chat
-            </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto p-4 space-y-6">
-            <!-- Navigation -->
-            <nav class="space-y-1">
-                <button onclick="switchView('chat')" id="nav-chat" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                    <i class="fa-regular fa-message w-5 text-center"></i> Chat
-                </button>
-                <button onclick="switchView('gallery')" id="nav-gallery" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                    <i class="fa-regular fa-image w-5 text-center"></i> Image History
-                </button>
-            </nav>
-
-            <!-- Chat History -->
-            <div>
-                <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Recent Chats</h3>
-                <ul id="historyList" class="space-y-1">
-                    <!-- History items will be populated here -->
-                </ul>
-            </div>
-        </div>
-
-        <div class="p-4 border-t border-gray-200 dark:border-gray-800">
-            <button onclick="openSettings()" class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800">
-                <i class="fa-solid fa-cog w-5 text-center"></i> Settings
-            </button>
-        </div>
-    </aside>
-
-    <!-- Overlay for mobile sidebar -->
-    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-10 hidden md:hidden" onclick="toggleSidebar()"></div>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col bg-white dark:bg-gray-950 relative h-full w-full">
-        <!-- Header -->
-        <header class="h-14 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 sticky top-0 bg-white/80 dark:bg-gray-950/80 backdrop-blur-md z-10">
-            <div class="flex items-center gap-3">
-                <button onclick="toggleSidebar()" class="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fa-solid fa-bars text-xl"></i>
-                </button>
-                
-                <!-- Model Selector -->
-                <div class="relative group">
-                    <button id="modelSelectBtn" class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 px-3 py-1.5 rounded-md transition-colors">
-                        <span id="currentModelDisplay">Fast Answer (Flash)</span>
-                        <i class="fa-solid fa-chevron-down text-xs text-gray-500"></i>
-                    </button>
-                    <div class="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-1 hidden group-hover:block z-50">
-                        <button onclick="setModel('gemini-3.5-flash', 'Fast Answer (Flash)')" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col">
-                            <span class="font-medium text-gray-900 dark:text-white">Fast Answer</span>
-                            <span class="text-xs text-gray-500">Quick responses for general tasks</span>
-                        </button>
-                        <button onclick="setModel('gemini-3-pro', 'Thinking Answer (Pro)')" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col">
-                            <span class="font-medium text-gray-900 dark:text-white">Thinking Answer</span>
-                            <span class="text-xs text-gray-500">Complex reasoning and logic</span>
-                        </button>
-                        <button onclick="setModel('deep-research-preview-04-2026', 'Deep Research')" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col">
-                            <span class="font-medium text-gray-900 dark:text-white">Deep Research</span>
-                            <span class="text-xs text-gray-500">Comprehensive multi-step research reports</span>
-                        </button>
-                        <div class="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                        <button onclick="setModel('gemini-3.1-flash-image', 'Image Creation')" class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 flex flex-col">
-                            <span class="font-medium text-gray-900 dark:text-white"><i class="fa-solid fa-image text-primary mr-1"></i> Image Creation</span>
-                            <span class="text-xs text-gray-500">Generate high-quality 4K images</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <button onclick="toggleTheme()" class="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-400 transition-colors">
-                    <i id="themeIcon" class="fa-solid fa-moon"></i>
-                </button>
-            </div>
-        </header>
-
-        <!-- Chat View -->
-        <div id="chatView" class="flex-1 flex flex-col overflow-hidden relative">
-            <div id="chatContainer" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-                <!-- Welcome Message (shown when empty) -->
-                <div id="welcomeMessage" class="flex flex-col items-center justify-center h-full text-center max-w-2xl mx-auto px-4">
-                    <div class="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-                        <i class="fa-solid fa-robot text-4xl text-primary"></i>
-                    </div>
-                    <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">How can I help you today?</h2>
-                    <p class="text-gray-500 dark:text-gray-400 mb-8">I can answer questions, write code, research topics, or generate images.</p>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
-                        <button onclick="prefillPrompt('Create a detailed image of a futuristic cyberpunk city with neon lights and flying cars')" class="p-4 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-colors flex flex-col gap-2">
-                            <i class="fa-solid fa-image text-purple-500"></i>
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Generate an image...</span>
-                            <span class="text-xs text-gray-500 line-clamp-1">futuristic cyberpunk city</span>
-                        </button>
-                        <button onclick="prefillPrompt('Explain quantum computing in simple terms for a 10 year old')" class="p-4 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-colors flex flex-col gap-2">
-                            <i class="fa-solid fa-lightbulb text-yellow-500"></i>
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Explain a concept...</span>
-                            <span class="text-xs text-gray-500 line-clamp-1">quantum computing simply</span>
-                        </button>
-                        <button onclick="prefillPrompt('Write a Python script to scrape a website and save data to CSV')" class="p-4 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-colors flex flex-col gap-2">
-                            <i class="fa-solid fa-code text-blue-500"></i>
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Write some code...</span>
-                            <span class="text-xs text-gray-500 line-clamp-1">Python web scraper</span>
-                        </button>
-                        <button onclick="prefillPrompt('Conduct a deep research report on the current state of solid-state batteries')" class="p-4 border border-gray-200 dark:border-gray-800 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 text-left transition-colors flex flex-col gap-2">
-                            <i class="fa-solid fa-magnifying-glass-chart text-green-500"></i>
-                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Deep research...</span>
-                            <span class="text-xs text-gray-500 line-clamp-1">solid-state batteries</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Input Area -->
-            <div class="p-4 bg-white dark:bg-gray-950 border-t border-gray-200 dark:border-gray-800 relative z-10">
-                <div class="max-w-4xl mx-auto relative">
-                    <!-- Image Preview Area -->
-                    <div id="imagePreviewContainer" class="hidden mb-2 flex gap-2 overflow-x-auto pb-2">
-                        <!-- Preview images will be injected here -->
-                    </div>
-
-                    <div class="relative flex items-end gap-2 bg-gray-100 dark:bg-gray-900 rounded-2xl p-2 border border-gray-300 dark:border-gray-700 focus-within:ring-2 focus-within:ring-primary focus-within:border-primary transition-all">
-                        
-                        <div class="flex flex-col justify-end pb-1 gap-1">
-                            <button type="button" onclick="document.getElementById('fileInput').click()" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" title="Upload Image">
-                                <i class="fa-solid fa-paperclip"></i>
-                            </button>
-                            <input type="file" id="fileInput" class="hidden" accept="image/*" multiple onchange="handleFileUpload(event)">
-                            
-                            <button type="button" id="micBtn" class="w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors" title="Voice Input" onclick="toggleSpeechRecognition()">
-                                <i class="fa-solid fa-microphone"></i>
-                            </button>
-                        </div>
-
-                        <textarea id="promptInput" rows="1" class="w-full max-h-32 bg-transparent text-gray-800 dark:text-gray-100 border-none outline-none resize-none py-2 px-2 overflow-y-auto" placeholder="Message ChaT..." oninput="autoResize(this)" onkeydown="handleKeyDown(event)"></textarea>
-                        
-                        <button id="sendBtn" onclick="handleSend()" class="w-10 h-10 flex-shrink-0 flex items-center justify-center rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed self-end mb-0.5">
-                            <i class="fa-solid fa-paper-plane"></i>
-                        </button>
-                    </div>
-                    <div class="text-center mt-2">
-                        <span class="text-[10px] text-gray-400">AI can make mistakes. Consider verifying important information.</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Image Gallery View (Hidden by default) -->
-        <div id="galleryView" class="hidden flex-1 flex flex-col overflow-hidden">
-            <div class="p-6 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Generated Images</h2>
-                <button onclick="clearGallery()" class="text-sm text-red-500 hover:text-red-700 px-3 py-1 rounded border border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                    <i class="fa-solid fa-trash mr-1"></i> Clear All
-                </button>
-            </div>
-            <div class="flex-1 overflow-y-auto p-6">
-                <div id="galleryGrid" class="image-grid">
-                    <!-- Images will be injected here -->
-                </div>
-                <div id="emptyGalleryMsg" class="hidden flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-                    <i class="fa-regular fa-image text-6xl mb-4 opacity-50"></i>
-                    <p>No images generated yet.</p>
-                    <button onclick="switchView('chat'); setModel('gemini-3.1-flash-image', 'Image Creation');" class="mt-4 text-primary hover:underline">Go create one!</button>
-                </div>
-            </div>
-        </div>
-    </main>
-
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white dark:bg-gray-900 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden modal-enter transform transition-all">
-            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Settings</h3>
-                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-                    <i class="fa-solid fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Gemini API Key</label>
-                    <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg px-4 py-2 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary outline-none">
-                    <p class="text-xs text-gray-500 mt-1">Required for image generation and Deep Research.</p>
-                </div>
-                <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">System Theme</span>
-                    <button onclick="toggleTheme()" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-md text-sm">Toggle Theme</button>
-                </div>
-                <div class="flex items-center justify-between pt-2">
-                    <span class="text-sm font-medium text-red-500">Danger Zone</span>
-                    <button onclick="clearAllData()" class="px-3 py-1.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-md text-sm hover:bg-red-200 transition-colors">Clear All History</button>
-                </div>
-            </div>
-            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end">
-                <button onclick="saveSettings()" class="bg-primary text-white px-4 py-2 rounded-lg hover:bg-primary-dark transition-colors font-medium">Save Changes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Image Modal for viewing full size -->
-    <div id="imageModal" class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center" onclick="closeImageModal()">
-        <img id="fullSizeImage" src="" class="max-w-full max-h-full object-contain p-4" onclick="event.stopPropagation()">
-        <div class="absolute top-4 right-4 flex gap-2">
-            <a id="downloadImageBtn" href="#" download="generated-image.png" class="bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm transition-colors" onclick="event.stopPropagation()">
-                <i class="fa-solid fa-download"></i>
-            </a>
-            <button onclick="closeImageModal()" class="bg-white/20 hover:bg-white/30 text-white rounded-full w-10 h-10 flex items-center justify-center backdrop-blur-sm transition-colors">
-                <i class="fa-solid fa-times"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-gray-900 text-white px-6 py-3 rounded-lg shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center gap-2">
-        <i id="toastIcon" class="fa-solid fa-info-circle"></i>
-        <span id="toastMessage">Notification</span>
-    </div>
-
-    <script>
-        // --- State Management ---
-        const state = {
-            chatHistory: [],
-            currentChatId: null,
-            chats: [], // Array of chat sessions
-            images: [], // Array of generated images
-            model: 'gemini-3.5-flash',
-            apiKey: '',
-            isDark: false,
-            uploadedImages: [], // Holds base64 data of user uploaded images
-            isRecording: false
-        };
-
-        // DOM Elements
-        const DOM = {
-            chatContainer: document.getElementById('chatContainer'),
-            welcomeMessage: document.getElementById('welcomeMessage'),
-            promptInput: document.getElementById('promptInput'),
-            sendBtn: document.getElementById('sendBtn'),
-            currentModelDisplay: document.getElementById('currentModelDisplay'),
-            historyList: document.getElementById('historyList'),
-            imagePreviewContainer: document.getElementById('imagePreviewContainer'),
-            chatView: document.getElementById('chatView'),
-            galleryView: document.getElementById('galleryView'),
-            galleryGrid: document.getElementById('galleryGrid'),
-            emptyGalleryMsg: document.getElementById('emptyGalleryMsg'),
-            sidebar: document.getElementById('sidebar'),
-            sidebarOverlay: document.getElementById('sidebarOverlay')
-        };
-
-        // --- Initialization ---
-        function init() {
-            loadState();
-            applyTheme();
-            renderHistoryList();
-            renderGallery();
-            
-            if (state.chats.length === 0) {
-                startNewChat();
-            } else {
-                loadChat(state.chats[0].id);
-            }
-
-            // Configure marked for markdown parsing
-            marked.setOptions({
-                breaks: true,
-                gfm: true
-            });
-        }
-
-        function loadState() {
-            const savedApiKey = localStorage.getItem('chat_api_key');
-            if (savedApiKey) state.apiKey = savedApiKey;
-            
-            const savedTheme = localStorage.getItem('chat_theme');
-            state.isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-            
-            const savedChats = localStorage.getItem('chat_sessions');
-            if (savedChats) state.chats = JSON.parse(savedChats);
-            
-            const savedImages = localStorage.getItem('chat_images');
-            if (savedImages) state.images = JSON.parse(savedImages);
-        }
-
-        function saveState() {
-            localStorage.setItem('chat_api_key', state.apiKey);
-            localStorage.setItem('chat_sessions', JSON.stringify(state.chats));
-            localStorage.setItem('chat_images', JSON.stringify(state.images));
-            localStorage.setItem('chat_theme', state.isDark ? 'dark' : 'light');
-        }
-
-        // --- UI Interactions ---
-        function toggleTheme() {
-            state.isDark = !state.isDark;
-            applyTheme();
-            saveState();
-        }
-
-        function applyTheme() {
-            const icon = document.getElementById('themeIcon');
-            if (state.isDark) {
-                document.documentElement.classList.add('dark');
-                icon.classList.replace('fa-moon', 'fa-sun');
-            } else {
-                document.documentElement.classList.remove('dark');
-                icon.classList.replace('fa-sun', 'fa-moon');
-            }
-        }
-
-        function toggleSidebar() {
-            DOM.sidebar.classList.toggle('-translate-x-full');
-            DOM.sidebarOverlay.classList.toggle('hidden');
-        }
-
-        function switchView(view) {
-            document.getElementById('nav-chat').classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
-            document.getElementById('nav-gallery').classList.remove('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
-            
-            if (view === 'chat') {
-                DOM.chatView.classList.remove('hidden');
-                DOM.galleryView.classList.add('hidden');
-                document.getElementById('nav-chat').classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
-            } else if (view === 'gallery') {
-                DOM.chatView.classList.add('hidden');
-                DOM.galleryView.classList.remove('hidden');
-                document.getElementById('nav-gallery').classList.add('bg-blue-50', 'dark:bg-blue-900/30', 'text-blue-700', 'dark:text-blue-300');
-                renderGallery();
-            }
-
-            if (window.innerWidth < 768) toggleSidebar();
-        }
-
-        function setModel(modelId, displayName) {
-            state.model = modelId;
-            DOM.currentModelDisplay.innerHTML = modelId.includes('image') ? `<i class="fa-solid fa-image text-primary mr-1"></i> ${displayName}` : displayName;
-            
-            // Close dropdown (relies on hover, so just shifting focus works)
-            document.activeElement.blur();
-            showToast(`Switched to ${displayName}`, 'info');
-        }
-
-        function autoResize(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = textarea.scrollHeight + 'px';
-            if(textarea.value === '') textarea.style.height = 'auto';
-        }
-
-        function prefillPrompt(text) {
-            DOM.promptInput.value = text;
-            autoResize(DOM.promptInput);
-            DOM.promptInput.focus();
-        }
-
-        function handleKeyDown(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
-        }
-
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const msg = document.getElementById('toastMessage');
-            const icon = document.getElementById('toastIcon');
-            
-            msg.textContent = message;
-            
-            if (type === 'error') {
-                toast.classList.replace('bg-gray-900', 'bg-red-600');
-                icon.classList.replace('fa-info-circle', 'fa-exclamation-circle');
-            } else if (type === 'success') {
-                toast.classList.replace('bg-gray-900', 'bg-green-600');
-                icon.classList.replace('fa-info-circle', 'fa-check-circle');
-            } else {
-                toast.classList.remove('bg-red-600', 'bg-green-600');
-                toast.classList.add('bg-gray-900');
-                icon.classList.replace('fa-exclamation-circle', 'fa-info-circle');
-                icon.classList.replace('fa-check-circle', 'fa-info-circle');
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3000);
-        }
-
-        // --- STREAMING_CHUNK:Implementing Chat Logic and API Calls ---
-        function startNewChat() {
-            const newChat = {
-                id: Date.now().toString(),
-                title: 'New Chat',
-                messages: [],
-                date: new Date().toISOString()
             };
-            state.chats.unshift(newChat);
-            state.currentChatId = newChat.id;
-            state.chatHistory = []; // Reset current history
-            saveState();
-            renderHistoryList();
-            renderChat();
-            if (window.innerWidth < 768 && !DOM.sidebar.classList.contains('-translate-x-full')) {
-                toggleSidebar();
-            }
-        }
 
-        function loadChat(id) {
-            state.currentChatId = id;
-            const chat = state.chats.find(c => c.id === id);
-            if (chat) {
-                state.chatHistory = chat.messages || [];
-                renderChat();
-                renderHistoryList();
-                switchView('chat');
-            }
-        }
+            // SEND MESSAGE LOGIC
+            const handleSend = async (e) => {
+                if (e) e.preventDefault();
+                if (!input.trim() || isGenerating) return;
 
-        function renderHistoryList() {
-            DOM.historyList.innerHTML = '';
-            state.chats.forEach(chat => {
-                const li = document.createElement('li');
-                const isCurrent = chat.id === state.currentChatId;
-                li.className = `group flex items-center justify-between px-3 py-2 text-sm rounded-md cursor-pointer transition-colors ${isCurrent ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800/50'}`;
+                const text = input.trim();
+                setInput('');
                 
-                li.innerHTML = `
-                    <div class="flex items-center gap-2 overflow-hidden w-full" onclick="loadChat('${chat.id}')">
-                        <i class="fa-regular fa-message flex-shrink-0"></i>
-                        <span class="truncate">${chat.title}</span>
-                    </div>
-                    <button onclick="deleteChat(event, '${chat.id}')" class="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2">
-                        <i class="fa-solid fa-trash-alt text-xs"></i>
-                    </button>
-                `;
-                DOM.historyList.appendChild(li);
-            });
-        }
+                // Add User Message
+                const userMsg = { id: Date.now().toString(), role: 'user', type: 'text', content: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+                
+                setSessions(prev => prev.map(s => {
+                    if (s.id === activeSession) {
+                        const isFirst = s.messages.length === 0;
+                        return { ...s, title: isFirst ? text.slice(0, 20) + '...' : s.title, messages: [...s.messages, userMsg] };
+                    }
+                    return s;
+                }));
 
-        function deleteChat(e, id) {
-            e.stopPropagation(); // Prevent loading the chat
-            state.chats = state.chats.filter(c => c.id !== id);
-            if (state.currentChatId === id) {
-                if (state.chats.length > 0) {
-                    loadChat(state.chats[0].id);
-                } else {
-                    startNewChat();
-                }
-            } else {
-                renderHistoryList();
-            }
-            saveState();
-        }
-
-        function renderChat() {
-            // Keep welcome message logic
-            DOM.chatContainer.innerHTML = '';
-            if (state.chatHistory.length === 0) {
-                DOM.chatContainer.appendChild(DOM.welcomeMessage);
-                return;
-            }
-
-            state.chatHistory.forEach(msg => appendMessageToUI(msg.role, msg.parts));
-            scrollToBottom();
-        }
-
-        function appendMessageToUI(role, parts) {
-            const isUser = role === 'user';
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `flex gap-4 w-full message-enter ${isUser ? 'flex-row-reverse' : ''}`;
-            
-            // Avatar
-            const avatar = document.createElement('div');
-            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isUser ? 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300' : 'bg-primary text-white'}`;
-            avatar.innerHTML = isUser ? '<i class="fa-solid fa-user text-sm"></i>' : '<i class="fa-solid fa-robot text-sm"></i>';
-
-            // Content Bubble
-            const contentDiv = document.createElement('div');
-            contentDiv.className = `max-w-[85%] rounded-2xl px-4 py-3 ${isUser ? 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100' : 'bg-transparent text-gray-800 dark:text-gray-200'}`;
-            
-            // Process parts (text and images)
-            let innerHTML = '';
-            let textContent = '';
-
-            parts.forEach(part => {
-                if (part.text) {
-                    textContent += part.text;
-                    innerHTML += `<div class="markdown-body text-[15px] leading-relaxed break-words">${marked.parse(part.text)}</div>`;
-                }
-                if (part.inlineData) {
-                    // Handle image output (base64)
-                    const src = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-                    innerHTML += `<img src="${src}" class="rounded-lg mt-2 max-w-full h-auto cursor-pointer border border-gray-200 dark:border-gray-700 hover:opacity-90 transition-opacity" onclick="openImageModal('${src}')" alt="Generated or uploaded image">`;
-                }
-            });
-
-            contentDiv.innerHTML = innerHTML;
-
-            // Add copy button for assistant messages
-            if (!isUser && textContent) {
-                const actionsDiv = document.createElement('div');
-                actionsDiv.className = "flex gap-2 mt-2";
-                actionsDiv.innerHTML = `
-                    <button onclick="copyToClipboard(this)" data-text="${encodeURIComponent(textContent)}" class="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors">
-                        <i class="fa-regular fa-copy"></i> Copy
-                    </button>
-                `;
-                contentDiv.appendChild(actionsDiv);
-            }
-
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(contentDiv);
-            DOM.chatContainer.appendChild(msgDiv);
-        }
-
-        function showTypingIndicator() {
-            const msgDiv = document.createElement('div');
-            msgDiv.id = 'typingIndicator';
-            msgDiv.className = `flex gap-4 w-full message-enter`;
-            
-            const avatar = document.createElement('div');
-            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary text-white`;
-            avatar.innerHTML = '<i class="fa-solid fa-robot text-sm"></i>';
-
-            const contentDiv = document.createElement('div');
-            contentDiv.className = `max-w-[85%] rounded-2xl px-4 py-4 bg-transparent`;
-            contentDiv.innerHTML = `
-                <div class="typing-indicator flex gap-1">
-                    <span></span><span></span><span></span>
-                </div>
-            `;
-
-            msgDiv.appendChild(avatar);
-            msgDiv.appendChild(contentDiv);
-            DOM.chatContainer.appendChild(msgDiv);
-            scrollToBottom();
-        }
-
-        function removeTypingIndicator() {
-            const el = document.getElementById('typingIndicator');
-            if (el) el.remove();
-        }
-
-        function scrollToBottom() {
-            DOM.chatContainer.scrollTo({
-                top: DOM.chatContainer.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-
-        function copyToClipboard(btn) {
-            const text = decodeURIComponent(btn.getAttribute('data-text'));
-            
-            // Create a temporary textarea element to leverage execCommand
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            // Make it visually hidden
-            textarea.style.position = 'fixed';
-            textarea.style.opacity = '0';
-            document.body.appendChild(textarea);
-            textarea.select();
-
-            try {
-                const successful = document.execCommand('copy');
-                if (successful) {
-                    const originalHTML = btn.innerHTML;
-                    btn.innerHTML = '<i class="fa-solid fa-check text-green-500"></i> Copied';
-                    setTimeout(() => { btn.innerHTML = originalHTML; }, 2000);
-                } else {
-                    showToast('Failed to copy text', 'error');
-                }
-            } catch (err) {
-                console.error('Fallback: Oops, unable to copy', err);
-                showToast('Failed to copy text', 'error');
-            } finally {
-                document.body.removeChild(textarea);
-            }
-        }
-
-        // --- STREAMING_CHUNK:Handling Input (Files, Voice, Text) ---
-        async function handleFileUpload(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
-            DOM.imagePreviewContainer.classList.remove('hidden');
-
-            for (const file of files) {
-                if (!file.type.startsWith('image/')) {
-                    showToast('Only image files are supported', 'error');
-                    continue;
-                }
+                setIsGenerating(true);
 
                 try {
-                    const base64Data = await readFileAsBase64(file);
-                    // Extract just the base64 string, remove data:image/png;base64, prefix
-                    const base64String = base64Data.split(',')[1];
-                    
-                    const imgObj = {
-                        mimeType: file.type,
-                        data: base64String,
-                        displayUrl: base64Data // Keep full URL for preview
-                    };
-                    
-                    state.uploadedImages.push(imgObj);
-                    
-                    // Add to preview UI
-                    const previewWrapper = document.createElement('div');
-                    previewWrapper.className = 'relative inline-block';
-                    previewWrapper.innerHTML = `
-                        <img src="${base64Data}" class="h-16 w-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600">
-                        <button onclick="removeUploadedImage(this, ${state.uploadedImages.length - 1})" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] hover:bg-red-600">
-                            <i class="fa-solid fa-times"></i>
-                        </button>
-                    `;
-                    DOM.imagePreviewContainer.appendChild(previewWrapper);
-                } catch (error) {
-                    console.error("Error reading file:", error);
-                    showToast("Error reading file", 'error');
-                }
-            }
-            
-            // Reset input
-            event.target.value = '';
-        }
+                    const apiKey = ""; // Canvas environment handles this automatically
 
-        function removeUploadedImage(btn, index) {
-            state.uploadedImages.splice(index, 1);
-            btn.parentElement.remove();
-            if (state.uploadedImages.length === 0) {
-                DOM.imagePreviewContainer.classList.add('hidden');
-            }
-        }
-
-        function readFileAsBase64(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // Voice Recognition (Basic implementation using Web Speech API)
-        function toggleSpeechRecognition() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                showToast("Speech recognition not supported in this browser.", "error");
-                return;
-            }
-
-            if (state.isRecording) {
-                // Stop handled by recognition.onend
-                return;
-            }
-
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            const recognition = new SpeechRecognition();
-            
-            recognition.continuous = false;
-            recognition.interimResults = true;
-            
-            recognition.onstart = () => {
-                state.isRecording = true;
-                const micBtn = document.getElementById('micBtn');
-                micBtn.classList.add('text-red-500', 'animate-pulse');
-                DOM.promptInput.placeholder = "Listening...";
-            };
-            
-            recognition.onresult = (event) => {
-                let interimTranscript = '';
-                let finalTranscript = '';
-                
-                for (let i = event.resultIndex; i < event.results.length; ++i) {
-                    if (event.results[i].isFinal) {
-                        finalTranscript += event.results[i][0].transcript;
+                    if (mode === 'chat') {
+                        // GEMINI 2.5 FLASH TEXT API
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                        const payload = {
+                            contents: [{ parts: [{ text: text }] }],
+                            systemInstruction: { parts: [{ text: systemInstruction }] }
+                        };
+                        
+                        const data = await executeApi(url, payload);
+                        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
+                        
+                        const aiMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'text', content: reply, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+                        setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, aiMsg] } : s));
                     } else {
-                        interimTranscript += event.results[i][0].transcript;
+                        // IMAGEN 4.0 IMAGE API
+                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+                        const payload = { instances: { prompt: text }, parameters: { sampleCount: 1 } };
+                        
+                        const data = await executeApi(url, payload);
+                        const base64 = data.predictions?.[0]?.bytesBase64Encoded;
+                        if (!base64) throw new Error("Image failed");
+                        
+                        const imgUrl = `data:image/png;base64,${base64}`;
+                        const aiMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'image', content: imgUrl, prompt: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
+                        setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, aiMsg] } : s));
                     }
+                } catch (error) {
+                    const errorMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'text', content: "⚠️ Connection Error. Please try again.", time: '' };
+                    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, errorMsg] } : s));
+                } finally {
+                    setIsGenerating(false);
                 }
-                
-                if (finalTranscript) {
-                    DOM.promptInput.value += (DOM.promptInput.value ? ' ' : '') + finalTranscript;
-                    autoResize(DOM.promptInput);
+            };
+
+            // UTILS
+            const copyToClipboard = (text, id) => {
+                const ta = document.createElement("textarea");
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                setCopiedId(id);
+                setTimeout(() => setCopiedId(null), 2000);
+            };
+
+            const downloadImage = (url, name) => {
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `RayyanArt-${name}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            const createNewChat = () => {
+                const newId = `sess-${Date.now()}`;
+                setSessions([{ id: newId, title: 'New Chat', messages: [] }, ...sessions]);
+                setActiveSession(newId);
+                if(window.innerWidth < 1024) setSidebarOpen(false);
+            };
+
+            const deleteChat = (id, e) => {
+                e.stopPropagation();
+                const filtered = sessions.filter(s => s.id !== id);
+                if (filtered.length === 0) {
+                    const newId = `sess-${Date.now()}`;
+                    setSessions([{ id: newId, title: 'New Chat', messages: [] }]);
+                    setActiveSession(newId);
+                } else {
+                    setSessions(filtered);
+                    if (activeSession === id) setActiveSession(filtered[0].id);
                 }
             };
-            
-            recognition.onerror = (event) => {
-                console.error("Speech recognition error", event.error);
-                showToast("Microphone error: " + event.error, "error");
-                stopRecordingUI();
-            };
-            
-            recognition.onend = () => {
-                stopRecordingUI();
-            };
-            
-            recognition.start();
-        }
 
-        function stopRecordingUI() {
-            state.isRecording = false;
-            const micBtn = document.getElementById('micBtn');
-            micBtn.classList.remove('text-red-500', 'animate-pulse');
-            DOM.promptInput.placeholder = "Message ChaT...";
-        }
-
-        // --- STREAMING_CHUNK:Main Generation Logic (API Integration) ---
-        async function handleSend() {
-            const text = DOM.promptInput.value.trim();
-            const hasImages = state.uploadedImages.length > 0;
-            
-            if (!text && !hasImages) return;
-
-            // Construct user message parts
-            const userParts = [];
-            if (text) userParts.push({ text: text });
-            
-            // Add uploaded images if any
-            if (hasImages) {
-                state.uploadedImages.forEach(img => {
-                    userParts.push({
-                        inlineData: {
-                            mimeType: img.mimeType,
-                            data: img.data
-                        }
+            // MARKDOWN PARSER (For Bold and Code Blocks)
+            const parseMarkdown = (text) => {
+                if (!text) return null;
+                const parts = text.split(/(```[\s\S]*?```)/g);
+                return parts.map((part, index) => {
+                    if (part.startsWith('```')) {
+                        const lines = part.split('\n');
+                        const lang = lines[0].replace('```', '').trim() || 'code';
+                        const code = lines.slice(1, -1).join('\n');
+                        return (
+                            <div key={index} className="my-4 rounded-lg bg-[#0d1117] border border-slate-700 overflow-hidden shadow-lg">
+                                <div className="flex justify-between items-center px-4 py-2 bg-[#161b22] border-b border-slate-700">
+                                    <span className="text-xs text-slate-400 font-mono uppercase">{lang}</span>
+                                    <button onClick={() => copyToClipboard(code, `code-${index}`)} className="flex items-center gap-1 text-xs text-slate-300 hover:text-white transition-colors">
+                                        {copiedId === `code-${index}` ? <Icons.Check /> : <Icons.Copy />}
+                                        {copiedId === `code-${index}` ? "Copied" : "Copy"}
+                                    </button>
+                                </div>
+                                <pre className="p-4 overflow-x-auto text-sm text-emerald-300 font-mono"><code>{code}</code></pre>
+                            </div>
+                        );
+                    }
+                    // Parse Bold **text**
+                    const formatted = part.split('\n').map((line, i) => {
+                        const chunks = line.split(/(\*\*.*?\*\*)/g).map((chunk, j) => {
+                            if (chunk.startsWith('**') && chunk.endsWith('**')) {
+                                return <strong key={j} className="text-white font-bold">{chunk.slice(2, -2)}</strong>;
+                            }
+                            return chunk;
+                        });
+                        return <p key={i} className="mb-2 leading-relaxed">{chunks}</p>;
                     });
+                    return <div key={index} className="text-slate-200">{formatted}</div>;
                 });
-            }
-
-            const userMessage = { role: 'user', parts: userParts };
-            
-            // Add to history
-            state.chatHistory.push(userMessage);
-            
-            // Update UI
-            if (DOM.welcomeMessage.parentNode) {
-                DOM.chatContainer.innerHTML = ''; // Clear welcome message
-            }
-            appendMessageToUI('user', userParts);
-            
-            // Clear inputs
-            DOM.promptInput.value = '';
-            DOM.promptInput.style.height = 'auto';
-            state.uploadedImages = [];
-            DOM.imagePreviewContainer.innerHTML = '';
-            DOM.imagePreviewContainer.classList.add('hidden');
-            
-            // Update chat title if it's the first message
-            const currentChat = state.chats.find(c => c.id === state.currentChatId);
-            if (currentChat && currentChat.messages.length === 0 && text) {
-                currentChat.title = text.substring(0, 30) + (text.length > 30 ? '...' : '');
-                renderHistoryList();
-            }
-            if (currentChat) {
-                currentChat.messages = [...state.chatHistory];
-                saveState();
-            }
-
-            showTypingIndicator();
-            DOM.sendBtn.disabled = true;
-
-            try {
-                // Determine API call based on model
-                let aiResponseParts = [];
-
-                // Note: Deep research requires specific API usage not fully simulated here due to lack of standard generateContent support.
-                // We will simulate it using Pro if the key is missing or standard endpoint.
-                
-                if (state.model.includes('image')) {
-                    // --- Image Generation Task ---
-                    aiResponseParts = await generateImage(text);
-                } else {
-                    // --- Text Generation Task ---
-                    aiResponseParts = await generateText(text, userParts);
-                }
-
-                removeTypingIndicator();
-                
-                if (aiResponseParts && aiResponseParts.length > 0) {
-                    const aiMessage = { role: 'model', parts: aiResponseParts };
-                    state.chatHistory.push(aiMessage);
-                    if (currentChat) {
-                        currentChat.messages = [...state.chatHistory];
-                        saveState();
-                    }
-                    appendMessageToUI('model', aiResponseParts);
-                }
-
-            } catch (error) {
-                removeTypingIndicator();
-                console.error("API Error:", error);
-                
-                const errorMsg = state.apiKey === '' && state.model !== 'gemini-3.5-flash' 
-                    ? "API key required for this model. Please add it in Settings." 
-                    : "An error occurred while communicating with the AI. " + error.message;
-                
-                showToast(errorMsg, 'error');
-                
-                // Add error message to chat visually but not to history array
-                const errorParts = [{ text: `**Error:** ${errorMsg}` }];
-                appendMessageToUI('model', errorParts);
-            } finally {
-                DOM.sendBtn.disabled = false;
-                scrollToBottom();
-            }
-        }
-
-        async function generateText(promptText, currentUserParts) {
-            // For gemini-3.5-flash we can use the canvas-provided empty API key.
-            // For pro/research, we need the user's API key.
-            let apiKeyToUse = "";
-            let modelToUse = "gemini-3.5-flash"; // Default fallback
-            
-            if (state.model === 'gemini-3.5-flash') {
-                apiKeyToUse = ""; 
-                modelToUse = "gemini-3-flash-preview"; // Mapping to actual Canvas supported model
-            } else {
-                if (!state.apiKey) throw new Error("API Key required for advanced models");
-                apiKeyToUse = state.apiKey;
-                // Mapping selected model to API endpoints
-                modelToUse = state.model === 'gemini-3-pro' ? 'gemini-1.5-pro-latest' : 'gemini-1.5-pro-latest'; // Fallback mapping
-            }
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${apiKeyToUse}`;
-            
-            // Construct payload based on history to maintain context
-            // Format history for Gemini API: [{role: "user"/"model", parts: [{text: "..."}]}]
-            const formattedHistory = state.chatHistory.slice(0, -1).map(msg => {
-                // Ensure correct roles (user or model)
-                const role = msg.role === 'user' ? 'user' : 'model';
-                return { role: role, parts: msg.parts };
-            });
-
-            // Add current message
-            formattedHistory.push({ role: 'user', parts: currentUserParts });
-
-            const payload = {
-                contents: formattedHistory
             };
 
-            // If Deep Research selected, we add system instruction to simulate it
-            if (state.model === 'deep-research-preview-04-2026') {
-                 payload.systemInstruction = {
-                    parts: [{ text: "You are an advanced AI research agent. The user wants a deep research report. Think step-by-step, analyze thoroughly, and provide a very comprehensive, structured, and cited response based on your training data." }]
-                };
-                // Adding search tool if we want grounding (optional simulation)
-                payload.tools = [{ "google_search": {} }];
-            }
-
-            // Fetch with exponential backoff (simplified here for brevity)
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            const candidate = result.candidates?.[0];
-
-            if (candidate && candidate.content?.parts) {
-                return candidate.content.parts;
-            } else {
-                throw new Error("Unexpected response format from API.");
-            }
-        }
-
-        async function generateImage(prompt) {
-            // Prefer imagen-4.0 for standard generation per rules, fallback to gemini image model
-            let apiUrl = "";
-            let payload = {};
-            let isImagen = true;
-
-            // Check if we are doing Image-to-Image editing based on uploaded images in history
-            const lastUserMsg = state.chatHistory[state.chatHistory.length - 1];
-            const hasInlineData = lastUserMsg.parts.some(p => p.inlineData);
-
-            if (hasInlineData) {
-                // Image to Image or Multi-turn editing requires gemini-3.1-flash-image
-                isImagen = false;
-                const apiKeyToUse = state.apiKey || ""; // Attempt with empty if not set, might fail depending on tier
-                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKeyToUse}`;
-                
-                // Construct history specifically for image model
-                const imageHistory = state.chatHistory.slice(0, -1).map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: msg.parts }));
-                imageHistory.push({ role: 'user', parts: lastUserMsg.parts });
-                
-                payload = {
-                    contents: imageHistory,
-                    generationConfig: {
-                        responseModalities: ['TEXT', 'IMAGE'],
-                    }
-                };
-            } else {
-                // Standard Text to Image -> use imagen-4
-                const apiKeyToUse = state.apiKey || "";
-                apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKeyToUse}`;
-                payload = { 
-                    instances: { prompt: prompt }, 
-                    parameters: { "sampleCount": 1 } 
-                };
-            }
-
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
-            }
-
-            const result = await response.json();
-            let aiParts = [];
-
-            if (isImagen) {
-                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-                    const base64Data = result.predictions[0].bytesBase64Encoded;
-                    aiParts.push({
-                        inlineData: {
-                            mimeType: "image/png",
-                            data: base64Data
-                        }
-                    });
-                    saveGeneratedImage(base64Data, prompt);
-                } else {
-                    throw new Error("Failed to generate image.");
-                }
-            } else {
-                // Gemini Flash Image response format
-                const candidateParts = result?.candidates?.[0]?.content?.parts;
-                if (candidateParts) {
-                    candidateParts.forEach(p => {
-                        if (p.inlineData) {
-                            aiParts.push(p);
-                            saveGeneratedImage(p.inlineData.data, prompt);
-                        } else if (p.text) {
-                            aiParts.push(p);
-                        }
-                    });
-                } else {
-                    throw new Error("Failed to generate image with Gemini model.");
-                }
-            }
-            
-            return aiParts;
-        }
-
-        // --- STREAMING_CHUNK:Gallery and Settings Management ---
-        function saveGeneratedImage(base64Data, prompt) {
-            const imgRecord = {
-                id: Date.now().toString(),
-                data: base64Data,
-                prompt: prompt,
-                date: new Date().toISOString()
+            const suggestions = {
+                chat: ["Write a professional email", "Explain quantum physics", "Write a Python script for web scraping"],
+                art: ["A futuristic cyberpunk city at night", "A cute astronaut cat on Mars", "A hyper-realistic mountain landscape"]
             };
-            state.images.unshift(imgRecord);
-            saveState();
-            
-            // Add a small text response confirming creation if it's purely an image return
-            return imgRecord;
-        }
 
-        function renderGallery() {
-            DOM.galleryGrid.innerHTML = '';
-            
-            if (state.images.length === 0) {
-                DOM.emptyGalleryMsg.classList.remove('hidden');
-                DOM.galleryGrid.classList.add('hidden');
-                return;
-            }
-
-            DOM.emptyGalleryMsg.classList.add('hidden');
-            DOM.galleryGrid.classList.remove('hidden');
-
-            state.images.forEach(img => {
-                const src = `data:image/png;base64,${img.data}`;
-                const div = document.createElement('div');
-                div.className = 'group relative aspect-square rounded-xl overflow-hidden shadow-sm border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 cursor-pointer';
-                div.innerHTML = `
-                    <img src="${src}" alt="Generated Image" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy">
-                    <div class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-3">
-                        <p class="text-white text-xs line-clamp-2 mb-2 font-medium">${img.prompt}</p>
-                        <div class="flex justify-between items-center">
-                            <span class="text-[10px] text-gray-300">${new Date(img.date).toLocaleDateString()}</span>
-                            <button onclick="deleteImage(event, '${img.id}')" class="text-red-400 hover:text-red-300">
-                                <i class="fa-solid fa-trash"></i>
+            return (
+                <div className="flex h-screen bg-[#020617] text-slate-200">
+                    
+                    {/* SIDEBAR */}
+                    <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-72 bg-[#09090b] border-r border-slate-800 transition-transform duration-300 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                        {/* Header */}
+                        <div className="p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20">R</div>
+                                <span className="font-bold text-lg tracking-wide bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Rayyan AI</span>
+                            </div>
+                            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+                        </div>
+                        
+                        {/* New Chat Btn */}
+                        <div className="px-4 pb-4">
+                            <button onClick={createNewChat} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors border border-slate-700">
+                                <Icons.Plus /> New Chat
                             </button>
                         </div>
-                    </div>
-                `;
-                div.onclick = () => openImageModal(src);
-                DOM.galleryGrid.appendChild(div);
-            });
+
+                        {/* History List */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1">
+                            <p className="px-2 pb-2 text-xs font-semibold text-slate-500 uppercase">Recent Chats</p>
+                            {sessions.map(s => (
+                                <div key={s.id} onClick={() => { setActiveSession(s.id); if(window.innerWidth < 1024) setSidebarOpen(false); }} className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${s.id === activeSession ? 'bg-indigo-600/20 text-indigo-300' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}>
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <Icons.MessageSquare className={s.id === activeSession ? "text-indigo-400" : ""} />
+                                        <span className="truncate text-sm">{s.title}</span>
+                                    </div>
+                                    <button onClick={(e) => deleteChat(s.id, e)} className="opacity-0 group-hover:opacity-100 hover:text-red-400 p-1"><Icons.Trash /></button>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* User / Settings Footer */}
+                        <div className="p-4 border-t border-slate-800 space-y-2">
+                            <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 text-sm text-slate-300 transition-colors">
+                                <Icons.Settings /> Persona Settings
+                            </button>
+                            <div className="flex items-center gap-3 p-2 text-sm text-slate-400">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Gemini Engine Active
+                            </div>
+                        </div>
+                    </aside>
+
+                    {/* Mobile Backdrop */}
+                    {sidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/60 z-30 lg:hidden"></div>}
+
+                    {/* MAIN CHAT AREA */}
+                    <main className="flex-1 flex flex-col relative h-full w-full">
+                        
+                        {/* Header (Glassmorphism) */}
+                        <header className="glass-panel h-16 flex items-center justify-between px-4 sticky top-0 z-20">
+                            <div className="flex items-center gap-3">
+                                {!sidebarOpen && <button onClick={() => setSidebarOpen(true)} className="text-slate-300 hover:text-white p-1"><Icons.Menu /></button>}
+                                
+                                {/* Mode Toggle */}
+                                <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
+                                    <button onClick={() => setMode('chat')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${mode === 'chat' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                                        <Icons.Sparkles className={mode === 'chat' ? 'text-indigo-400' : ''}/> Chat
+                                    </button>
+                                    <button onClick={() => setMode('art')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${mode === 'art' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
+                                        <Icons.Image className={mode === 'art' ? 'text-pink-400' : ''}/> Art
+                                    </button>
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Chat History View */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
+                            {currentSession.messages.length === 0 ? (
+                                <div className="max-w-2xl mx-auto h-full flex flex-col items-center justify-center text-center mt-10">
+                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-3xl mb-6 shadow-xl shadow-purple-500/20">R</div>
+                                    <h1 className="text-3xl md:text-4xl font-bold mb-3 text-white">How can I help you today?</h1>
+                                    <p className="text-slate-400 mb-10">I am Rayyan AI. I can write code, generate text, and create stunning images.</p>
+                                    
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+                                        {(mode === 'chat' ? suggestions.chat : suggestions.art).map((sugg, i) => (
+                                            <button key={i} onClick={() => setInput(sugg)} className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 text-left text-sm text-slate-300 transition-all shadow-sm hover:shadow-indigo-500/10">
+                                                {sugg}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="max-w-3xl mx-auto space-y-6 pb-6">
+                                    {currentSession.messages.map((msg, idx) => (
+                                        <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
+                                            {/* Avatar */}
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-slate-700' : 'bg-gradient-to-tr from-indigo-500 to-purple-600'}`}>
+                                                {msg.role === 'user' ? <Icons.User /> : <span className="text-xs font-bold text-white">R</span>}
+                                            </div>
+                                            
+                                            {/* Message Bubble */}
+                                            <div className={`group relative max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-3.5 ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-transparent text-slate-200'}`}>
+                                                
+                                                {msg.type === 'text' ? (
+                                                    <div className="text-[15px]">{parseMarkdown(msg.content)}</div>
+                                                ) : (
+                                                    <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
+                                                        <img src={msg.content} className="w-full max-h-96 object-contain" alt="Generated AI Art" />
+                                                        <div className="p-3 bg-slate-950 flex justify-between items-center">
+                                                            <p className="text-xs text-slate-400 truncate w-3/4">"{msg.prompt}"</p>
+                                                            <button onClick={() => downloadImage(msg.content, msg.id)} className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors">
+                                                                <Icons.Download /> Save
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Action Bar (Copy) for Bot */}
+                                                {msg.role === 'bot' && msg.type === 'text' && (
+                                                    <div className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <button onClick={() => copyToClipboard(msg.content, msg.id)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-slate-900 px-2 py-1 rounded border border-slate-700">
+                                                            {copiedId === msg.id ? <Icons.Check /> : <Icons.Copy />} {copiedId === msg.id ? "Copied" : "Copy"}
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                    
+                                    {/* Typing Indicator */}
+                                    {isGenerating && (
+                                        <div className="flex gap-4">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 animate-pulse"><span className="text-xs font-bold text-white">R</span></div>
+                                            <div className="bg-transparent px-5 py-3 space-y-3 w-64">
+                                                <div className="h-2 bg-slate-700 rounded w-full animate-pulse"></div>
+                                                <div className="h-2 bg-slate-700 rounded w-4/5 animate-pulse"></div>
+                                                <div className="h-2 bg-slate-700 rounded w-1/2 animate-pulse"></div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                            <div ref={messagesEndRef}></div>
+                        </div>
+
+                        {/* Input Area */}
+                        <div className="p-4 md:px-8 pb-6 w-full max-w-4xl mx-auto bg-[#020617] pt-2">
+                            <form onSubmit={handleSend} className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-xl focus-within:border-indigo-500/50 transition-colors flex items-end p-2">
+                                <textarea 
+                                    value={input} 
+                                    onChange={(e) => setInput(e.target.value)}
+                                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                                    placeholder={mode === 'chat' ? "Message Rayyan AI..." : "Describe the image you want to generate..."}
+                                    className="w-full bg-transparent text-white placeholder-slate-500 p-3 max-h-32 resize-none outline-none text-[15px] custom-scrollbar"
+                                    rows="1"
+                                    style={{height: input ? 'auto' : '52px'}}
+                                />
+                                <button type="submit" disabled={!input.trim() || isGenerating} className={`p-3 rounded-xl ml-2 shrink-0 transition-colors ${input.trim() && !isGenerating ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
+                                    <Icons.Send />
+                                </button>
+                            </form>
+                            <p className="text-center text-xs text-slate-500 mt-3">Rayyan AI can make mistakes. Consider verifying important information.</p>
+                        </div>
+                    </main>
+
+                    {/* SETTINGS MODAL */}
+                    {showSettings && (
+                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+                            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
+                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icons.Settings /> AI Persona Settings</h3>
+                                <div className="space-y-2 mb-6">
+                                    <label className="text-xs text-slate-400 font-semibold uppercase">System Instructions (How AI behaves)</label>
+                                    <textarea 
+                                        value={systemInstruction} 
+                                        onChange={(e) => setSystemInstruction(e.target.value)}
+                                        rows="4" 
+                                        className="w-full bg-[#020617] border border-slate-700 rounded-lg p-3 text-sm text-slate-300 outline-none focus:border-indigo-500"
+                                    ></textarea>
+                                </div>
+                                <div className="flex justify-end gap-3">
+                                    <button onClick={() => setShowSettings(false)} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors">Save & Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
         }
 
-        function deleteImage(e, id) {
-            e.stopPropagation();
-            if (confirm("Are you sure you want to delete this image from history?")) {
-                state.images = state.images.filter(img => img.id !== id);
-                saveState();
-                renderGallery();
-            }
-        }
-
-        function clearGallery() {
-            if (state.images.length === 0) return;
-            if (confirm("Are you sure you want to delete ALL generated images?")) {
-                state.images = [];
-                saveState();
-                renderGallery();
-            }
-        }
-
-        function openImageModal(src) {
-            const modal = document.getElementById('imageModal');
-            const img = document.getElementById('fullSizeImage');
-            const downloadBtn = document.getElementById('downloadImageBtn');
-            
-            img.src = src;
-            downloadBtn.href = src;
-            modal.classList.remove('hidden');
-        }
-
-        function closeImageModal() {
-            document.getElementById('imageModal').classList.add('hidden');
-        }
-
-        function openSettings() {
-            document.getElementById('apiKeyInput').value = state.apiKey;
-            document.getElementById('settingsModal').classList.remove('hidden');
-            if (window.innerWidth < 768) toggleSidebar();
-        }
-
-        function closeSettings() {
-            document.getElementById('settingsModal').classList.add('hidden');
-        }
-
-        function saveSettings() {
-            state.apiKey = document.getElementById('apiKeyInput').value.trim();
-            saveState();
-            closeSettings();
-            showToast('Settings saved successfully', 'success');
-        }
-
-        function clearAllData() {
-            if (confirm("WARNING: This will delete all chats, images, and settings. Are you absolutely sure?")) {
-                localStorage.clear();
-                state.chats = [];
-                state.images = [];
-                state.apiKey = '';
-                startNewChat();
-                renderGallery();
-                closeSettings();
-                showToast('All data cleared', 'info');
-            }
-        }
-
-        // Initialize App
-        window.onload = init;
-
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
