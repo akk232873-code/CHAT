@@ -1,429 +1,1360 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rayyan AI Assistant</title>
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'dart:async';
+import 'dart:math';
+
+// Note: In a real Flutter project, you would add dependencies in pubspec.yaml:
+// dependencies:
+//   flutter:
+//     sdk: flutter
+//   flutter_staggered_grid_view: ^0.7.0
+//   intl: ^0.18.1
+//   shared_preferences: ^2.2.2 (Mocked here for single file)
+//   sqflite: ^2.3.0 (Mocked here for single file)
+//   path_provider: ^2.1.1
+//   uuid: ^4.2.1
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Set preferred orientations
+  SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
+  
+  // Configure system UI
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+
+  runApp(const NotesProApp());
+}
+
+// --- THEME ---
+class AppTheme {
+  static final ThemeData lightTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.light,
+    colorSchemeSeed: Colors.deepPurple,
+    scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      iconTheme: IconThemeData(color: Colors.black87),
+      titleTextStyle: TextStyle(
+        color: Colors.black87,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
+      ),
+    ),
+    cardTheme: CardTheme(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFFE0E0E0), width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    ),
+    textTheme: const TextTheme(
+      headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5),
+      bodyLarge: TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
+      bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: Colors.black54),
+    ),
+  );
+
+  static final ThemeData darkTheme = ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    colorSchemeSeed: Colors.deepPurple,
+    scaffoldBackgroundColor: const Color(0xFF121212),
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      centerTitle: true,
+      iconTheme: IconThemeData(color: Colors.white),
+      titleTextStyle: TextStyle(
+        color: Colors.white,
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        letterSpacing: -0.5,
+      ),
+    ),
+    cardTheme: CardTheme(
+      elevation: 0,
+      color: const Color(0xFF1E1E1E),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFF333333), width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      filled: true,
+      fillColor: const Color(0xFF2C2C2C),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    ),
+    textTheme: const TextTheme(
+      headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: -0.5, color: Colors.white),
+      titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.5, color: Colors.white),
+      bodyLarge: TextStyle(fontSize: 16, height: 1.5, color: Colors.white70),
+      bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: Colors.white54),
+    ),
+  );
+}
+
+// --- MODELS ---
+class Note {
+  final String id;
+  String title;
+  String content;
+  DateTime createdAt;
+  DateTime updatedAt;
+  int colorValue;
+  bool isPinned;
+  bool isArchived;
+  bool isFavorite;
+  List<String> labels;
+
+  Note({
+    required this.id,
+    required this.title,
+    required this.content,
+    required this.createdAt,
+    required this.updatedAt,
+    this.colorValue = 0xFFFFFFFF,
+    this.isPinned = false,
+    this.isArchived = false,
+    this.isFavorite = false,
+    this.labels = const [],
+  });
+
+  Note copyWith({
+    String? title,
+    String? content,
+    DateTime? updatedAt,
+    int? colorValue,
+    bool? isPinned,
+    bool? isArchived,
+    bool? isFavorite,
+    List<String>? labels,
+  }) {
+    return Note(
+      id: this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      createdAt: this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      colorValue: colorValue ?? this.colorValue,
+      isPinned: isPinned ?? this.isPinned,
+      isArchived: isArchived ?? this.isArchived,
+      isFavorite: isFavorite ?? this.isFavorite,
+      labels: labels ?? this.labels,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'content': content,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+      'colorValue': colorValue,
+      'isPinned': isPinned ? 1 : 0,
+      'isArchived': isArchived ? 1 : 0,
+      'isFavorite': isFavorite ? 1 : 0,
+      'labels': jsonEncode(labels),
+    };
+  }
+
+  factory Note.fromMap(Map<String, dynamic> map) {
+    return Note(
+      id: map['id'],
+      title: map['title'],
+      content: map['content'],
+      createdAt: DateTime.parse(map['createdAt']),
+      updatedAt: DateTime.parse(map['updatedAt']),
+      colorValue: map['colorValue'],
+      isPinned: map['isPinned'] == 1,
+      isArchived: map['isArchived'] == 1,
+      isFavorite: map['isFavorite'] == 1,
+      labels: List<String>.from(jsonDecode(map['labels'] ?? '[]')),
+    );
+  }
+}
+
+// --- SERVICES (MOCK DATABASE) ---
+// In a real app, use sqflite or Hive. We mock it here for the single-file constraint.
+class DatabaseService {
+  static final DatabaseService _instance = DatabaseService._internal();
+  factory DatabaseService() => _instance;
+  DatabaseService._internal();
+
+  final List<Note> _mockDb = [];
+  
+  // Initialize with some dummy data for demonstration
+  void _seedData() {
+    if (_mockDb.isEmpty) {
+      final now = DateTime.now();
+      _mockDb.addAll([
+        Note(
+          id: '1',
+          title: 'Project Ideas',
+          content: '1. Flutter notes app with modern UI\n2. AI powered task manager\n3. Habit tracker with gamification',
+          createdAt: now.subtract(const Duration(days: 2)),
+          updatedAt: now.subtract(const Duration(days: 2)),
+          colorValue: 0xFFFFF9C4, // Light Yellow
+          isPinned: true,
+          labels: ['Ideas', 'Work'],
+        ),
+        Note(
+          id: '2',
+          title: 'Grocery List',
+          content: '- Milk\n- Eggs\n- Bread\n- Coffee beans (important!)\n- Avocados',
+          createdAt: now.subtract(const Duration(days: 1)),
+          updatedAt: now,
+          colorValue: 0xFFC8E6C9, // Light Green
+        ),
+        Note(
+          id: '3',
+          title: 'Meeting Notes: Q3 Planning',
+          content: 'Discussed key objectives for next quarter. Need to focus on user retention and improving onboarding flow. Action items assigned to John and Sarah.',
+          createdAt: now,
+          updatedAt: now,
+          isFavorite: true,
+          colorValue: 0xFFBBDEFB, // Light Blue
+          labels: ['Work'],
+        ),
+      ]);
+    }
+  }
+
+  Future<List<Note>> getNotes() async {
+    _seedData(); // Ensure we have data
+    await Future.delayed(const Duration(milliseconds: 300)); // Simulate IO latency
+    // Return non-archived notes sorted by pinned first, then by updated date
+    List<Note> activeNotes = _mockDb.where((n) => !n.isArchived).toList();
+    activeNotes.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return b.updatedAt.compareTo(a.updatedAt);
+    });
+    return activeNotes;
+  }
+
+  Future<List<Note>> searchNotes(String query) async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    final lowercaseQuery = query.toLowerCase();
+    return _mockDb.where((n) => 
+      !n.isArchived && 
+      (n.title.toLowerCase().contains(lowercaseQuery) || n.content.toLowerCase().contains(lowercaseQuery))
+    ).toList();
+  }
+
+  Future<void> insertNote(Note note) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _mockDb.add(note);
+  }
+
+  Future<void> updateNote(Note note) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    final index = _mockDb.indexWhere((n) => n.id == note.id);
+    if (index != -1) {
+      _mockDb[index] = note;
+    }
+  }
+
+  Future<void> deleteNote(String id) async {
+    await Future.delayed(const Duration(milliseconds: 100));
+    _mockDb.removeWhere((n) => n.id == id);
+  }
+  
+  // Simple UUID generator alternative for mock
+  String generateId() {
+    return DateTime.now().millisecondsSinceEpoch.toString() + Random().nextInt(1000).toString();
+  }
+}
+
+// --- STATE MANAGEMENT (Simple Provider Pattern implementation) ---
+// Simulating ChangeNotifierProvider pattern often used in Flutter
+class NotesProvider extends ChangeNotifier {
+  final DatabaseService _db = DatabaseService();
+  
+  List<Note> _notes = [];
+  bool _isLoading = false;
+  bool _isGridView = true; // Toggle between grid and list
+
+  List<Note> get notes => _notes;
+  bool get isLoading => _isLoading;
+  bool get isGridView => _isGridView;
+
+  List<Note> get pinnedNotes => _notes.where((n) => n.isPinned).toList();
+  List<Note> get otherNotes => _notes.where((n) => !n.isPinned).toList();
+
+  NotesProvider() {
+    fetchNotes();
+  }
+
+  Future<void> fetchNotes() async {
+    _isLoading = true;
+    notifyListeners();
     
-    <!-- Tailwind CSS for Premium Styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    _notes = await _db.getNotes();
     
-    <!-- React & ReactDOM -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    _isLoading = false;
+    notifyListeners();
+  }
 
-    <style>
-        /* Premium Custom Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #475569; }
-        
-        /* Glassmorphism utilities */
-        .glass-panel { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.05); }
-        
-        body { background-color: #020617; color: #f8fafc; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    </style>
-</head>
-<body>
+  Future<void> addNote(String title, String content, int colorValue) async {
+    final newNote = Note(
+      id: _db.generateId(),
+      title: title,
+      content: content,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      colorValue: colorValue,
+    );
+    await _db.insertNote(newNote);
+    await fetchNotes();
+  }
 
-    <div id="root"></div>
+  Future<void> updateNote(Note note) async {
+    note.updatedAt = DateTime.now();
+    await _db.updateNote(note);
+    await fetchNotes();
+  }
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+  Future<void> togglePin(Note note) async {
+    final updated = note.copyWith(isPinned: !note.isPinned);
+    await updateNote(updated);
+  }
+  
+  Future<void> toggleFavorite(Note note) async {
+    final updated = note.copyWith(isFavorite: !note.isFavorite);
+    await updateNote(updated);
+  }
 
-        // --- PREMIUM ICONS (SVG) ---
-        const Icons = {
-            Sparkles: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275Z"/><path d="m5 3 1 2.5L8.5 6 6 7 5 9.5 4 7 1.5 6 4 5.5Z"/><path d="m19 17 1 2.5 2.5.5-2.5 1-1 2.5-1-2.5-2.5-1 2.5-1Z"/></svg>,
-            Image: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><rect width="18" height="18" x="3" y="3" rx="4" ry="4"/><circle cx="9" cy="9" r="2.5"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>,
-            Send: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-5 h-5 ${className}`}><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>,
-            Menu: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>,
-            Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>,
-            MessageSquare: ({ className = "" }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${className}`}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-            Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>,
-            Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>,
-            Copy: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>,
-            Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-emerald-400"><polyline points="20 6 9 17 4 12"></polyline></svg>,
-            Download: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
-            User: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        };
+  Future<void> deleteNote(String id) async {
+    await _db.deleteNote(id);
+    await fetchNotes();
+  }
 
-        function App() {
-            // STATE MANAGEMENT
-            const [sessions, setSessions] = useState([{ id: 'sess-1', title: 'New Chat', messages: [] }]);
-            const [activeSession, setActiveSession] = useState('sess-1');
-            const [input, setInput] = useState('');
-            const [mode, setMode] = useState('chat'); // 'chat' | 'art'
-            const [isGenerating, setIsGenerating] = useState(false);
-            const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024);
-            const [showSettings, setShowSettings] = useState(false);
-            const [copiedId, setCopiedId] = useState(null);
-            
-            const [systemInstruction, setSystemInstruction] = useState(
-                "You are Rayyan AI, an elite, helpful, and highly intelligent AI assistant. Provide well-structured, creative, and highly accurate responses. Use markdown formatting for readability."
-            );
+  void toggleViewMode() {
+    _isGridView = !_isGridView;
+    notifyListeners();
+  }
+}
 
-            const messagesEndRef = useRef(null);
+// Global instance for simplicity in this single-file constraint
+final notesProvider = NotesProvider();
 
-            // Auto Scroll
-            useEffect(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, [sessions, isGenerating]);
+// --- APP WIDGET ---
+class NotesProApp extends StatefulWidget {
+  const NotesProApp({super.key});
 
-            // Handle Resize for Sidebar
-            useEffect(() => {
-                const handleResize = () => setSidebarOpen(window.innerWidth >= 1024);
-                window.addEventListener('resize', handleResize);
-                return () => window.removeEventListener('resize', handleResize);
-            }, []);
+  @override
+  State<NotesProApp> createState() => _NotesProAppState();
+}
 
-            const currentSession = sessions.find(s => s.id === activeSession) || sessions[0];
+class _NotesProAppState extends State<NotesProApp> {
+  // Theme state
+  ThemeMode _themeMode = ThemeMode.system;
 
-            // ROBUST API CALLER WITH RETRY
-            const executeApi = async (url, payload, maxRetries = 3) => {
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!response.ok) throw new Error("API Error");
-                        return await response.json();
-                    } catch (err) {
-                        if (i === maxRetries - 1) throw err;
-                        await new Promise(res => setTimeout(res, 1000 * Math.pow(2, i)));
-                    }
-                }
-            };
+  void toggleTheme() {
+    setState(() {
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
 
-            // SEND MESSAGE LOGIC
-            const handleSend = async (e) => {
-                if (e) e.preventDefault();
-                if (!input.trim() || isGenerating) return;
-
-                const text = input.trim();
-                setInput('');
-                
-                // Add User Message
-                const userMsg = { id: Date.now().toString(), role: 'user', type: 'text', content: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
-                
-                setSessions(prev => prev.map(s => {
-                    if (s.id === activeSession) {
-                        const isFirst = s.messages.length === 0;
-                        return { ...s, title: isFirst ? text.slice(0, 20) + '...' : s.title, messages: [...s.messages, userMsg] };
-                    }
-                    return s;
-                }));
-
-                setIsGenerating(true);
-
-                try {
-                    const apiKey = ""; // Canvas environment handles this automatically
-
-                    if (mode === 'chat') {
-                        // GEMINI 2.5 FLASH TEXT API
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${AQ.Ab8RN6J8ErI8zClfw6fe2d8dbpTVLfkfpR9jjcbcWHeBV9VpaA}`;
-                        const payload = {
-                            contents: [{ parts: [{ text: text }] }],
-                            systemInstruction: { parts: [{ text: systemInstruction }] }
-                        };
-                        
-                        const data = await executeApi(url, payload);
-                        const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't generate a response.";
-                        
-                        const aiMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'text', content: reply, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
-                        setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, aiMsg] } : s));
-                    } else {
-                        // IMAGEN 4.0 IMAGE API
-                        const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${AQ.Ab8RN6J8ErI8zClfw6fe2d8dbpTVLfkfpR9jjcbcWHeBV9VpaA}`;
-                        const payload = { instances: { prompt: text }, parameters: { sampleCount: 1 } };
-                        
-                        const data = await executeApi(url, payload);
-                        const base64 = data.predictions?.[0]?.bytesBase64Encoded;
-                        if (!base64) throw new Error("Image failed");
-                        
-                        const imgUrl = `data:image/png;base64,${base64}`;
-                        const aiMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'image', content: imgUrl, prompt: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) };
-                        setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, aiMsg] } : s));
-                    }
-                } catch (error) {
-                    const errorMsg = { id: (Date.now()+1).toString(), role: 'bot', type: 'text', content: "⚠️ Connection Error. Please try again.", time: '' };
-                    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, messages: [...s.messages, errorMsg] } : s));
-                } finally {
-                    setIsGenerating(false);
-                }
-            };
-
-            // UTILS
-            const copyToClipboard = (text, id) => {
-                const ta = document.createElement("textarea");
-                ta.value = text;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand("copy");
-                document.body.removeChild(ta);
-                setCopiedId(id);
-                setTimeout(() => setCopiedId(null), 2000);
-            };
-
-            const downloadImage = (url, name) => {
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `RayyanArt-${name}.png`;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            };
-
-            const createNewChat = () => {
-                const newId = `sess-${Date.now()}`;
-                setSessions([{ id: newId, title: 'New Chat', messages: [] }, ...sessions]);
-                setActiveSession(newId);
-                if(window.innerWidth < 1024) setSidebarOpen(false);
-            };
-
-            const deleteChat = (id, e) => {
-                e.stopPropagation();
-                const filtered = sessions.filter(s => s.id !== id);
-                if (filtered.length === 0) {
-                    const newId = `sess-${Date.now()}`;
-                    setSessions([{ id: newId, title: 'New Chat', messages: [] }]);
-                    setActiveSession(newId);
-                } else {
-                    setSessions(filtered);
-                    if (activeSession === id) setActiveSession(filtered[0].id);
-                }
-            };
-
-            // MARKDOWN PARSER (For Bold and Code Blocks)
-            const parseMarkdown = (text) => {
-                if (!text) return null;
-                const parts = text.split(/(```[\s\S]*?```)/g);
-                return parts.map((part, index) => {
-                    if (part.startsWith('```')) {
-                        const lines = part.split('\n');
-                        const lang = lines[0].replace('```', '').trim() || 'code';
-                        const code = lines.slice(1, -1).join('\n');
-                        return (
-                            <div key={index} className="my-4 rounded-lg bg-[#0d1117] border border-slate-700 overflow-hidden shadow-lg">
-                                <div className="flex justify-between items-center px-4 py-2 bg-[#161b22] border-b border-slate-700">
-                                    <span className="text-xs text-slate-400 font-mono uppercase">{lang}</span>
-                                    <button onClick={() => copyToClipboard(code, `code-${index}`)} className="flex items-center gap-1 text-xs text-slate-300 hover:text-white transition-colors">
-                                        {copiedId === `code-${index}` ? <Icons.Check /> : <Icons.Copy />}
-                                        {copiedId === `code-${index}` ? "Copied" : "Copy"}
-                                    </button>
-                                </div>
-                                <pre className="p-4 overflow-x-auto text-sm text-emerald-300 font-mono"><code>{code}</code></pre>
-                            </div>
-                        );
-                    }
-                    // Parse Bold **text**
-                    const formatted = part.split('\n').map((line, i) => {
-                        const chunks = line.split(/(\*\*.*?\*\*)/g).map((chunk, j) => {
-                            if (chunk.startsWith('**') && chunk.endsWith('**')) {
-                                return <strong key={j} className="text-white font-bold">{chunk.slice(2, -2)}</strong>;
-                            }
-                            return chunk;
-                        });
-                        return <p key={i} className="mb-2 leading-relaxed">{chunks}</p>;
-                    });
-                    return <div key={index} className="text-slate-200">{formatted}</div>;
-                });
-            };
-
-            const suggestions = {
-                chat: ["Write a professional email", "Explain quantum physics", "Write a Python script for web scraping"],
-                art: ["A futuristic cyberpunk city at night", "A cute astronaut cat on Mars", "A hyper-realistic mountain landscape"]
-            };
-
-            return (
-                <div className="flex h-screen bg-[#020617] text-slate-200">
-                    
-                    {/* SIDEBAR */}
-                    <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-72 bg-[#09090b] border-r border-slate-800 transition-transform duration-300 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                        {/* Header */}
-                        <div className="p-4 flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white shadow-lg shadow-purple-500/20">R</div>
-                                <span className="font-bold text-lg tracking-wide bg-gradient-to-r from-white to-slate-400 bg-clip-text text-transparent">Rayyan AI</span>
-                            </div>
-                            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-                        </div>
-                        
-                        {/* New Chat Btn */}
-                        <div className="px-4 pb-4">
-                            <button onClick={createNewChat} className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors border border-slate-700">
-                                <Icons.Plus /> New Chat
-                            </button>
-                        </div>
-
-                        {/* History List */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar px-3 space-y-1">
-                            <p className="px-2 pb-2 text-xs font-semibold text-slate-500 uppercase">Recent Chats</p>
-                            {sessions.map(s => (
-                                <div key={s.id} onClick={() => { setActiveSession(s.id); if(window.innerWidth < 1024) setSidebarOpen(false); }} className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${s.id === activeSession ? 'bg-indigo-600/20 text-indigo-300' : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'}`}>
-                                    <div className="flex items-center gap-3 overflow-hidden">
-                                        <Icons.MessageSquare className={s.id === activeSession ? "text-indigo-400" : ""} />
-                                        <span className="truncate text-sm">{s.title}</span>
-                                    </div>
-                                    <button onClick={(e) => deleteChat(s.id, e)} className="opacity-0 group-hover:opacity-100 hover:text-red-400 p-1"><Icons.Trash /></button>
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* User / Settings Footer */}
-                        <div className="p-4 border-t border-slate-800 space-y-2">
-                            <button onClick={() => setShowSettings(true)} className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 text-sm text-slate-300 transition-colors">
-                                <Icons.Settings /> Persona Settings
-                            </button>
-                            <div className="flex items-center gap-3 p-2 text-sm text-slate-400">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Gemini Engine Active
-                            </div>
-                        </div>
-                    </aside>
-
-                    {/* Mobile Backdrop */}
-                    {sidebarOpen && <div onClick={() => setSidebarOpen(false)} className="fixed inset-0 bg-black/60 z-30 lg:hidden"></div>}
-
-                    {/* MAIN CHAT AREA */}
-                    <main className="flex-1 flex flex-col relative h-full w-full">
-                        
-                        {/* Header (Glassmorphism) */}
-                        <header className="glass-panel h-16 flex items-center justify-between px-4 sticky top-0 z-20">
-                            <div className="flex items-center gap-3">
-                                {!sidebarOpen && <button onClick={() => setSidebarOpen(true)} className="text-slate-300 hover:text-white p-1"><Icons.Menu /></button>}
-                                
-                                {/* Mode Toggle */}
-                                <div className="flex bg-slate-900 rounded-lg p-1 border border-slate-800">
-                                    <button onClick={() => setMode('chat')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${mode === 'chat' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                                        <Icons.Sparkles className={mode === 'chat' ? 'text-indigo-400' : ''}/> Chat
-                                    </button>
-                                    <button onClick={() => setMode('art')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${mode === 'art' ? 'bg-slate-700 text-white shadow' : 'text-slate-400 hover:text-white'}`}>
-                                        <Icons.Image className={mode === 'art' ? 'text-pink-400' : ''}/> Art
-                                    </button>
-                                </div>
-                            </div>
-                        </header>
-
-                        {/* Chat History View */}
-                        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8">
-                            {currentSession.messages.length === 0 ? (
-                                <div className="max-w-2xl mx-auto h-full flex flex-col items-center justify-center text-center mt-10">
-                                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center font-bold text-white text-3xl mb-6 shadow-xl shadow-purple-500/20">R</div>
-                                    <h1 className="text-3xl md:text-4xl font-bold mb-3 text-white">How can I help you today?</h1>
-                                    <p className="text-slate-400 mb-10">I am Rayyan AI. I can write code, generate text, and create stunning images.</p>
-                                    
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
-                                        {(mode === 'chat' ? suggestions.chat : suggestions.art).map((sugg, i) => (
-                                            <button key={i} onClick={() => setInput(sugg)} className="p-4 rounded-xl bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-indigo-500/50 text-left text-sm text-slate-300 transition-all shadow-sm hover:shadow-indigo-500/10">
-                                                {sugg}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="max-w-3xl mx-auto space-y-6 pb-6">
-                                    {currentSession.messages.map((msg, idx) => (
-                                        <div key={idx} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                                            {/* Avatar */}
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${msg.role === 'user' ? 'bg-slate-700' : 'bg-gradient-to-tr from-indigo-500 to-purple-600'}`}>
-                                                {msg.role === 'user' ? <Icons.User /> : <span className="text-xs font-bold text-white">R</span>}
-                                            </div>
-                                            
-                                            {/* Message Bubble */}
-                                            <div className={`group relative max-w-[85%] md:max-w-[75%] rounded-2xl px-5 py-3.5 ${msg.role === 'user' ? 'bg-slate-800 text-white rounded-tr-sm' : 'bg-transparent text-slate-200'}`}>
-                                                
-                                                {msg.type === 'text' ? (
-                                                    <div className="text-[15px]">{parseMarkdown(msg.content)}</div>
-                                                ) : (
-                                                    <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-900">
-                                                        <img src={msg.content} className="w-full max-h-96 object-contain" alt="Generated AI Art" />
-                                                        <div className="p-3 bg-slate-950 flex justify-between items-center">
-                                                            <p className="text-xs text-slate-400 truncate w-3/4">"{msg.prompt}"</p>
-                                                            <button onClick={() => downloadImage(msg.content, msg.id)} className="flex items-center gap-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-3 py-1.5 rounded-lg transition-colors">
-                                                                <Icons.Download /> Save
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                
-                                                {/* Action Bar (Copy) for Bot */}
-                                                {msg.role === 'bot' && msg.type === 'text' && (
-                                                    <div className="absolute -bottom-8 left-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <button onClick={() => copyToClipboard(msg.content, msg.id)} className="flex items-center gap-1 text-xs text-slate-400 hover:text-white bg-slate-900 px-2 py-1 rounded border border-slate-700">
-                                                            {copiedId === msg.id ? <Icons.Check /> : <Icons.Copy />} {copiedId === msg.id ? "Copied" : "Copy"}
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                    
-                                    {/* Typing Indicator */}
-                                    {isGenerating && (
-                                        <div className="flex gap-4">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 animate-pulse"><span className="text-xs font-bold text-white">R</span></div>
-                                            <div className="bg-transparent px-5 py-3 space-y-3 w-64">
-                                                <div className="h-2 bg-slate-700 rounded w-full animate-pulse"></div>
-                                                <div className="h-2 bg-slate-700 rounded w-4/5 animate-pulse"></div>
-                                                <div className="h-2 bg-slate-700 rounded w-1/2 animate-pulse"></div>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            <div ref={messagesEndRef}></div>
-                        </div>
-
-                        {/* Input Area */}
-                        <div className="p-4 md:px-8 pb-6 w-full max-w-4xl mx-auto bg-[#020617] pt-2">
-                            <form onSubmit={handleSend} className="relative bg-slate-900 border border-slate-700 rounded-2xl shadow-xl focus-within:border-indigo-500/50 transition-colors flex items-end p-2">
-                                <textarea 
-                                    value={input} 
-                                    onChange={(e) => setInput(e.target.value)}
-                                    onKeyDown={(e) => { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-                                    placeholder={mode === 'chat' ? "Message Rayyan AI..." : "Describe the image you want to generate..."}
-                                    className="w-full bg-transparent text-white placeholder-slate-500 p-3 max-h-32 resize-none outline-none text-[15px] custom-scrollbar"
-                                    rows="1"
-                                    style={{height: input ? 'auto' : '52px'}}
-                                />
-                                <button type="submit" disabled={!input.trim() || isGenerating} className={`p-3 rounded-xl ml-2 shrink-0 transition-colors ${input.trim() && !isGenerating ? 'bg-indigo-600 hover:bg-indigo-500 text-white' : 'bg-slate-800 text-slate-500'}`}>
-                                    <Icons.Send />
-                                </button>
-                            </form>
-                            <p className="text-center text-xs text-slate-500 mt-3">Rayyan AI can make mistakes. Consider verifying important information.</p>
-                        </div>
-                    </main>
-
-                    {/* SETTINGS MODAL */}
-                    {showSettings && (
-                        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-                            <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl">
-                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2"><Icons.Settings /> AI Persona Settings</h3>
-                                <div className="space-y-2 mb-6">
-                                    <label className="text-xs text-slate-400 font-semibold uppercase">System Instructions (How AI behaves)</label>
-                                    <textarea 
-                                        value={systemInstruction} 
-                                        onChange={(e) => setSystemInstruction(e.target.value)}
-                                        rows="4" 
-                                        className="w-full bg-[#020617] border border-slate-700 rounded-lg p-3 text-sm text-slate-300 outline-none focus:border-indigo-500"
-                                    ></textarea>
-                                </div>
-                                <div className="flex justify-end gap-3">
-                                    <button onClick={() => setShowSettings(false)} className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-colors">Save & Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            );
+  @override
+  Widget build(BuildContext context) {
+    // Provide the notesProvider and theme toggler down the tree
+    return InheritedAppConfig(
+      toggleTheme: toggleTheme,
+      child: AnimatedBuilder(
+        animation: notesProvider,
+        builder: (context, child) {
+          return MaterialApp(
+            title: 'Notes Pro',
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: _themeMode,
+            home: const HomeScreen(),
+          );
         }
+      ),
+    );
+  }
+}
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
-</body>
-</html>
+// Inherited widget to pass down theme toggle function
+class InheritedAppConfig extends InheritedWidget {
+  final VoidCallback toggleTheme;
+
+  const InheritedAppConfig({
+    super.key,
+    required this.toggleTheme,
+    required super.child,
+  });
+
+  static InheritedAppConfig of(BuildContext context) {
+    final InheritedAppConfig? result = context.dependOnInheritedWidgetOfExactType<InheritedAppConfig>();
+    assert(result != null, 'No InheritedAppConfig found in context');
+    return result!;
+  }
+
+  @override
+  bool updateShouldNotify(InheritedAppConfig oldWidget) => true;
+}
+
+// --- REUSABLE WIDGETS ---
+
+// Note Card Widget
+class NoteCard extends StatelessWidget {
+  final Note note;
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+  final bool isList;
+
+  const NoteCard({
+    super.key,
+    required this.note,
+    required this.onTap,
+    required this.onLongPress,
+    this.isList = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // Adapt color for dark mode to not be overwhelmingly bright
+    Color cardColor = Color(note.colorValue);
+    if (isDark && note.colorValue != 0xFFFFFFFF) {
+      // Darken the custom color slightly for dark mode
+      cardColor = HSLColor.fromColor(cardColor).withLightness(0.2).withSaturation(0.4).toColor();
+    } else if (isDark && note.colorValue == 0xFFFFFFFF) {
+      cardColor = theme.cardTheme.color!;
+    } else if (!isDark && note.colorValue == 0xFFFFFFFF) {
+      cardColor = Colors.white;
+    }
+
+    return Hero(
+      tag: 'note_${note.id}',
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          onLongPress: onLongPress,
+          borderRadius: BorderRadius.circular(20),
+          splashColor: theme.colorScheme.primary.withOpacity(0.1),
+          highlightColor: theme.colorScheme.primary.withOpacity(0.05),
+          child: Container(
+            decoration: BoxDecoration(
+              color: cardColor,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isDark ? Colors.white10 : Colors.black.withOpacity(0.05),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ]
+            ),
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (note.title.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8.0),
+                    child: Text(
+                      note.title,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                      maxLines: isList ? 1 : 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                if (note.content.isNotEmpty)
+                  Flexible(
+                    child: Text(
+                      note.content,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: isDark ? Colors.white70 : Colors.black87.withOpacity(0.7),
+                      ),
+                      maxLines: isList ? 2 : 6,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      DateFormat('MMM d').format(note.updatedAt),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: isDark ? Colors.white54 : Colors.black54,
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        if (note.isFavorite)
+                          Icon(Icons.favorite, size: 14, color: Colors.red[400]),
+                        if (note.isFavorite && note.isPinned)
+                          const SizedBox(width: 4),
+                        if (note.isPinned)
+                          Icon(Icons.push_pin, size: 14, color: isDark ? Colors.white54 : Colors.black54),
+                      ],
+                    )
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Search Bar Widget
+class ModernSearchBar extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const ModernSearchBar({super.key, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 56,
+        decoration: BoxDecoration(
+          color: theme.inputDecorationTheme.fillColor,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            Icon(Icons.search, color: theme.hintColor),
+            const SizedBox(width: 12),
+            Text(
+              'Search your notes...',
+              style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.hintColor,
+              ),
+            ),
+            const Spacer(),
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: theme.colorScheme.primaryContainer,
+              child: Icon(Icons.person, size: 20, color: theme.colorScheme.primary),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- SCREENS ---
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _fabAnimationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _fabAnimationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fabAnimationController.dispose();
+    super.dispose();
+  }
+
+  void _navigateToCreate() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const EditNoteScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          const begin = Offset(0.0, 1.0);
+          const end = Offset.zero;
+          const curve = Curves.easeOutQuart;
+          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+          var offsetAnimation = animation.drive(tween);
+          return SlideTransition(position: offsetAnimation, child: child);
+        },
+      ),
+    );
+  }
+
+  void _navigateToSearch() {
+    Navigator.push(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const SearchScreen(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  void _showNoteOptions(BuildContext context, Note note) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: Icon(note.isPinned ? Icons.push_pin_outlined : Icons.push_pin),
+                title: Text(note.isPinned ? 'Unpin' : 'Pin'),
+                onTap: () {
+                  notesProvider.togglePin(note);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(note.isFavorite ? Icons.favorite_border : Icons.favorite),
+                title: Text(note.isFavorite ? 'Remove from Favorites' : 'Add to Favorites'),
+                onTap: () {
+                  notesProvider.toggleFavorite(note);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Colors.red),
+                title: const Text('Delete', style: TextStyle(color: Colors.red)),
+                onTap: () {
+                  notesProvider.deleteNote(note.id);
+                  Navigator.pop(context);
+                },
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = notesProvider; // Using the global instance
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      body: SafeArea(
+        child: AnimatedBuilder(
+          animation: provider,
+          builder: (context, child) {
+            if (provider.isLoading && provider.notes.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            return CustomScrollView(
+              physics: const BouncingScrollPhysics(),
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Notes Pro',
+                              style: theme.textTheme.headlineMedium,
+                            ),
+                            Row(
+                              children: [
+                                IconButton(
+                                  icon: Icon(provider.isGridView ? Icons.view_agenda_outlined : Icons.grid_view),
+                                  onPressed: provider.toggleViewMode,
+                                  tooltip: 'Toggle View',
+                                ),
+                                IconButton(
+                                  icon: Icon(theme.brightness == Brightness.dark ? Icons.light_mode : Icons.dark_mode),
+                                  onPressed: () {
+                                    InheritedAppConfig.of(context).toggleTheme();
+                                  },
+                                  tooltip: 'Toggle Theme',
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+                        ModernSearchBar(onTap: _navigateToSearch),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                if (provider.notes.isEmpty)
+                  SliverFillRemaining(
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.note_alt_outlined, size: 80, color: theme.hintColor.withOpacity(0.3)),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No notes yet',
+                            style: theme.textTheme.titleLarge?.copyWith(color: theme.hintColor),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Tap the + button to create one',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else ...[
+                  if (provider.pinnedNotes.isNotEmpty) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Text(
+                          'PINNED',
+                          style: theme.textTheme.labelMedium?.copyWith(
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.bold,
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                    _buildNotesList(provider.pinnedNotes, provider.isGridView),
+                  ],
+                  
+                  if (provider.otherNotes.isNotEmpty) ...[
+                    if (provider.pinnedNotes.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          child: Text(
+                            'OTHERS',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              letterSpacing: 1.2,
+                              fontWeight: FontWeight.bold,
+                              color: theme.hintColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    _buildNotesList(provider.otherNotes, provider.isGridView),
+                  ],
+                  const SliverToBoxAdapter(child: SizedBox(height: 80)), // Space for FAB
+                ]
+              ],
+            );
+          }
+        ),
+      ),
+      floatingActionButton: ScaleTransition(
+        scale: _fabAnimationController,
+        child: FloatingActionButton.extended(
+          onPressed: _navigateToCreate,
+          backgroundColor: theme.colorScheme.primaryContainer,
+          foregroundColor: theme.colorScheme.onPrimaryContainer,
+          elevation: 4,
+          icon: const Icon(Icons.add),
+          label: const Text('Create'),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotesList(List<Note> notes, bool isGridView) {
+    if (isGridView) {
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverMasonryGrid.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          itemBuilder: (context, index) {
+            final note = notes[index];
+            return NoteCard(
+              note: note,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => EditNoteScreen(note: note)),
+                );
+              },
+              onLongPress: () => _showNoteOptions(context, note),
+            );
+          },
+          childCount: notes.length,
+        ),
+      );
+    } else {
+      return SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final note = notes[index];
+            return Padding(
+              padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+              child: NoteCard(
+                note: note,
+                isList: true,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => EditNoteScreen(note: note)),
+                  );
+                },
+                onLongPress: () => _showNoteOptions(context, note),
+              ),
+            );
+          },
+          childCount: notes.length,
+        ),
+      );
+    }
+  }
+}
+
+// --- EDIT NOTE SCREEN ---
+class EditNoteScreen extends StatefulWidget {
+  final Note? note;
+
+  const EditNoteScreen({super.key, this.note});
+
+  @override
+  State<EditNoteScreen> createState() => _EditNoteScreenState();
+}
+
+class _EditNoteScreenState extends State<EditNoteScreen> {
+  late TextEditingController _titleController;
+  late TextEditingController _contentController;
+  late int _currentColor;
+  bool _isPinned = false;
+  bool _isFavorite = false;
+
+  // Standard predefined colors for notes
+  final List<int> _colors = [
+    0xFFFFFFFF, // Default White
+    0xFFF28B82, // Red
+    0xFFFBBC04, // Orange
+    0xFFFFF475, // Yellow
+    0xFFCCFF90, // Green
+    0xFFA7FFEB, // Teal
+    0xFFCBF0F8, // Blue
+    0xFFAECBFA, // Dark Blue
+    0xFFD7AEFB, // Purple
+    0xFFFDCFE8, // Pink
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.note?.title ?? '');
+    _contentController = TextEditingController(text: widget.note?.content ?? '');
+    _currentColor = widget.note?.colorValue ?? 0xFFFFFFFF;
+    _isPinned = widget.note?.isPinned ?? false;
+    _isFavorite = widget.note?.isFavorite ?? false;
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  void _saveNote() {
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    // Don't save if empty
+    if (title.isEmpty && content.isEmpty) {
+      Navigator.pop(context);
+      return;
+    }
+
+    if (widget.note == null) {
+      // Create new
+      notesProvider.addNote(title, content, _currentColor).then((_) {
+        // Find the newly added note to update its pin/fav status if needed
+        if (_isPinned || _isFavorite) {
+           // Hacky way for mock: update the last added note
+           final newlyAdded = notesProvider.notes.firstWhere((n) => n.title == title && n.content == content);
+           notesProvider.updateNote(newlyAdded.copyWith(isPinned: _isPinned, isFavorite: _isFavorite));
+        }
+      });
+    } else {
+      // Update existing
+      final updatedNote = widget.note!.copyWith(
+        title: title,
+        content: content,
+        colorValue: _currentColor,
+        isPinned: _isPinned,
+        isFavorite: _isFavorite,
+      );
+      notesProvider.updateNote(updatedNote);
+    }
+    
+    Navigator.pop(context);
+  }
+
+  void _showColorPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Note Color', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 20),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _colors.map((colorValue) {
+                    final isSelected = _currentColor == colorValue;
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _currentColor = colorValue;
+                        });
+                        Navigator.pop(context);
+                      },
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Color(colorValue),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected ? Theme.of(context).colorScheme.primary : Colors.grey.withOpacity(0.3),
+                            width: isSelected ? 3 : 1,
+                          ),
+                          boxShadow: [
+                            if (isSelected)
+                              BoxShadow(
+                                color: Color(colorValue).withOpacity(0.5),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              )
+                          ]
+                        ),
+                        child: isSelected 
+                            ? Icon(Icons.check, color: colorValue == 0xFFFFFFFF ? Colors.black : Colors.black87) 
+                            : null,
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    // Background color based on selected color and theme
+    Color bgColor = theme.scaffoldBackgroundColor;
+    if (_currentColor != 0xFFFFFFFF) {
+      if (isDark) {
+        bgColor = HSLColor.fromColor(Color(_currentColor)).withLightness(0.15).withSaturation(0.3).toColor();
+      } else {
+        bgColor = Color(_currentColor).withOpacity(0.3); // Lighter version for background
+      }
+    }
+
+    return WillPopScope(
+      onWillPop: () async {
+        _saveNote();
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: bgColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: _saveNote,
+          ),
+          actions: [
+            IconButton(
+              icon: Icon(_isPinned ? Icons.push_pin : Icons.push_pin_outlined),
+              onPressed: () {
+                setState(() {
+                  _isPinned = !_isPinned;
+                });
+              },
+            ),
+            IconButton(
+              icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border),
+              color: _isFavorite ? Colors.red[400] : null,
+              onPressed: () {
+                setState(() {
+                  _isFavorite = !_isFavorite;
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.color_lens_outlined),
+              onPressed: _showColorPicker,
+            ),
+            if (widget.note != null)
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () {
+                  notesProvider.deleteNote(widget.note!.id);
+                  Navigator.pop(context);
+                },
+              ),
+          ],
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _titleController,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          height: 1.3,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Title',
+                          hintStyle: theme.textTheme.headlineMedium?.copyWith(
+                            color: theme.hintColor.withOpacity(0.5),
+                            fontWeight: FontWeight.bold,
+                          ),
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          filled: false,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        maxLines: null,
+                        textInputAction: TextInputAction.next,
+                      ),
+                      if (widget.note != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Edited ${DateFormat('MMM d, h:mm a').format(widget.note!.updatedAt)}',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.hintColor,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+                      TextField(
+                        controller: _contentController,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          height: 1.6,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Start typing...',
+                          hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.hintColor.withOpacity(0.5),
+                          ),
+                          border: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          filled: false,
+                          contentPadding: EdgeInsets.zero,
+                        ),
+                        maxLines: null,
+                        keyboardType: TextInputType.multiline,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Bottom Toolbar
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, -2),
+                      blurRadius: 10,
+                    )
+                  ]
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(icon: const Icon(Icons.check_box_outlined), onPressed: () {}),
+                    IconButton(icon: const Icon(Icons.mic_none), onPressed: () {}),
+                    IconButton(icon: const Icon(Icons.image_outlined), onPressed: () {}),
+                    IconButton(icon: const Icon(Icons.draw_outlined), onPressed: () {}),
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// --- SEARCH SCREEN ---
+class SearchScreen extends StatefulWidget {
+  const SearchScreen({super.key});
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  List<Note> _searchResults = [];
+  bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text;
+    if (query.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    DatabaseService().searchNotes(query).then((results) {
+      if (mounted) {
+        setState(() {
+          _searchResults = results;
+          _isSearching = false;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Scaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: 'Search notes...',
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: _searchController.text.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () {
+                                  _searchController.clear();
+                                },
+                              )
+                            : null,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: _buildBody(theme),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBody(ThemeData theme) {
+    if (_isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_searchController.text.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.search, size: 64, color: theme.hintColor.withOpacity(0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'Search by title or content',
+              style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_searchResults.isEmpty) {
+      return Center(
+        child: Text(
+          'No notes found matching "${_searchController.text}"',
+          style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      physics: const BouncingScrollPhysics(),
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final note = _searchResults[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: NoteCard(
+            note: note,
+            isList: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => EditNoteScreen(note: note)),
+              ).then((_) {
+                // Refresh search results if edited
+                _onSearchChanged();
+              });
+            },
+            onLongPress: () {}, // Handled in home screen for simplicity here
+          ),
+        );
+      },
+    );
+  }
+}
